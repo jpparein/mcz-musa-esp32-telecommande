@@ -50,6 +50,10 @@ Retours d'expérience sur d'autres modèles bienvenus.
 
 Un poêle est un appareil de chauffage. Éprouvez chaque automatisme en étant présent et ne laissez rien l'allumer sans surveillance tant qu'il n'est pas éprouvé. Projet personnel de rétro-ingénierie sur du matériel qui appartient à l'auteur, sans lien avec le fabricant MCZ ; « MCZ », « Musa », « Club » et « MAX LCD » sont des noms de leurs propriétaires, cités uniquement pour désigner le matériel compatible. Aucune garantie : vous l'utilisez à vos risques.
 
+## Comment ce projet a été fait
+
+Le décodage des trames (structure, champs, contrôle XOR-linéaire, tables) et le code ont été réalisés par Jean-Philippe PAREIN **avec l'aide de Claude Code** (assistant d'IA d'Anthropic). Les captures, les essais sur le poêle et toutes les validations en réel ont été faits par l'auteur, sur son propre matériel.
+
 ## Licences et attribution
 
 - Code (`firmware/`, `web/`, `analyse/`) : licence **MIT**, voir [LICENSE](LICENSE).

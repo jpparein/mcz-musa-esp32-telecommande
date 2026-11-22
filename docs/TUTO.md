@@ -2,6 +2,8 @@
 
 Ce tutoriel raconte la méthode, pour que vous puissiez l'appliquer à ce poêle **ou à un autre** poêle/appareil à télécommande 433 MHz. Pour reproduire le projet tel quel, suivez [REPRODUIRE.md](REPRODUIRE.md). Pour les valeurs précises, voir [PROTOCOLE.md](PROTOCOLE.md).
 
+> Le décodage des trames a été réalisé avec l'aide de Claude Code (IA d'Anthropic) ; les captures et les essais réels sont de l'auteur.
+
 ## Le principe
 
 Une télécommande radio envoie des trames. Si l'on sait les enregistrer, les comprendre et en fabriquer de nouvelles, un ESP32 peut jouer le rôle de la télécommande. Quatre étapes :
