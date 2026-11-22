@@ -6,6 +6,12 @@ Statut des informations : **[établi]** = vérifié sur des trames réelles et/o
 
 > Votre télécommande a sa propre adresse (blocs 1 à 3). Les valeurs données ici sont celles de la télécommande de l'auteur : il faut capturer la vôtre (voir [REPRODUIRE.md](REPRODUIRE.md)). Le reste (structure, champs, tables de contrôle) devrait être commun à la gamme, mais ce n'est pas garanti : voir « Ce qui peut différer sur votre poêle ».
 
+La télécommande d'origine :
+
+| MAX LCD | Rétroéclairée, la lune = NO AIR |
+|---|---|
+| <img src="photos/telecommande/telecommande-mcz-max-lcd.jpg" width="230" alt="MAX LCD"> | <img src="photos/telecommande/telecommande-mcz-retroeclairage.jpg" width="230" alt="Rétroéclairée, la lune = NO AIR"> |
+
 ## 1. Couche radio
 
 | Élément | Valeur |

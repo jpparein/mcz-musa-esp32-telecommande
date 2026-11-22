@@ -13,7 +13,10 @@ Une télécommande radio envoie des trames. Si l'on sait les enregistrer, les co
 3. **Comprendre** : codage des bits, structure, champs, contrôle.
 4. **Émettre** : refabriquer une trame correcte et la rejouer.
 
-![télécommande MCZ MAX LCD](photos/telecommande/telecommande-mcz-max-lcd.jpg)
+| Télécommande MAX LCD | Écran allumé | Rétroéclairage |
+|---|---|---|
+| <img src="photos/telecommande/telecommande-mcz-max-lcd.jpg" width="230" alt="Télécommande MAX LCD"> | <img src="photos/telecommande/telecommande-mcz-allumee.jpg" width="230" alt="Écran allumé"> | <img src="photos/telecommande/telecommande-mcz-retroeclairage.jpg" width="230" alt="Rétroéclairage"> |
+
 
 ## 1. Fréquence et modulation
 
@@ -58,7 +61,10 @@ Les trames ne disent pas tout : il faut aussi observer **quand** la télécomman
 
 Pour remplacer la télécommande, l'ESP32 reproduit ces règles avec un capteur de température.
 
-![application](photos/application/telecommande-ecran-auto.jpg)
+| Télécommande à l'écran (AUTO) | Mode ECO | Mode nuit (NO AIR) |
+|---|---|---|
+| <img src="photos/application/telecommande-ecran-auto.jpg" width="230" alt="Télécommande à l'écran (AUTO)"> | <img src="photos/application/telecommande-eco.jpg" width="230" alt="Mode ECO"> | <img src="photos/application/mode-nuit-no-air.jpg" width="230" alt="Mode nuit (NO AIR)"> |
+
 
 ## 8. Faire tenir ensemble télécommande et application
 

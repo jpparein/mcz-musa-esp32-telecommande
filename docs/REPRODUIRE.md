@@ -18,7 +18,13 @@ Temps prévu : une journée pour le matériel et la capture, quelques jours pour
 | option | Raspberry Pi (ou tout serveur Apache + PHP + SQLite) | pour l'application web, les minuteurs, l'historique |
 | — | la télécommande d'origine (**MAX LCD**) | indispensable pour capturer l'adresse |
 
-Photos : [`photos/materiel/`](photos/materiel/).
+| ESP32 DevKit | Module CC1101 et antenne | Les deux modules |
+|---|---|---|
+| <img src="photos/materiel/esp32-devkit.jpg" width="230" alt="ESP32 DevKit"> | <img src="photos/materiel/cc1101-avec-antenne.jpg" width="230" alt="Module CC1101 et antenne"> | <img src="photos/materiel/esp32-et-cc1101.jpg" width="230" alt="Les deux modules"> |
+
+Le CC1101 est vu ici côté puce ; sa face arrière :
+
+![CC1101 vu de dessous](photos/materiel/cc1101-vu-de-dessous.jpg)
 
 ## 2. Câblage ESP32 ↔ CC1101
 
@@ -39,7 +45,23 @@ Le CC1101 se parle en SPI. La broche **GDO0** est la « donnée brute » : une *
 
 DHT22 (mode remplacement) : `-` sur GND, `OUT` sur **GPIO 25**, `+` sur **GPIO 26**. Astuce : le 3V3 de l'ESP32 est déjà pris par le CC1101 ; le capteur consomme moins de 2 mA, on l'alimente donc par la broche GPIO 26 mise à 3,3 V (cela permet aussi de le couper puis le rallumer s'il se fige).
 
-Photos du câblage : [`photos/cablage/`](photos/cablage/) (`tableau-des-fils.png`, `esp32-cablage-annote.jpg`, `cc1101-cablage-annote.jpg`).
+Tableau des fils (couleurs utilisées sur les photos) :
+
+![Tableau des fils](photos/cablage/tableau-des-fils.png)
+
+Broches du CC1101 (numérotées 1 à 8, broche 1 en bas à gauche, côté puce) :
+
+![Broches du CC1101](photos/cablage/cc1101-cablage-annote.jpg)
+
+Broches de l'ESP32 utilisées :
+
+![Broches de l'ESP32](photos/cablage/esp32-cablage-annote.jpg)
+
+Vue d'ensemble :
+
+![Vue d'ensemble du câblage](photos/cablage/vue-ensemble-cablage.jpg)
+
+> Sur les photos, le fil GDO2 (broche 8 du CC1101 vers D16) est branché mais **inutile** : vous pouvez ne pas le câbler.
 
 ### Où placer l'ESP32 ?
 

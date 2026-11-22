@@ -4,7 +4,10 @@ Piloter un poêle à pellets **MCZ Musa / Club Comfort Air 2.0** (télécommande
 
 À notre connaissance, **le protocole radio de ces poêles n'était documenté nulle part**. Ce dépôt le décrit en détail (structure des trames, champs, contrôle, tables, comportements AUTO / ECO / NO AIR) et contient tout le code pour le reproduire.
 
-![télécommande MCZ](docs/photos/telecommande/telecommande-mcz-max-lcd.jpg)
+| Télécommande MCZ MAX LCD | ESP32 + CC1101 | Application | Télécommande à l'écran |
+|---|---|---|---|
+| <img src="docs/photos/telecommande/telecommande-mcz-max-lcd.jpg" width="190" alt="Télécommande MCZ MAX LCD"> | <img src="docs/photos/materiel/esp32-et-cc1101.jpg" width="190" alt="ESP32 + CC1101"> | <img src="docs/photos/application/accueil-temperature.jpg" width="190" alt="Application"> | <img src="docs/photos/application/telecommande-ecran-auto.jpg" width="190" alt="Télécommande à l'écran"> |
+
 
 ## Ce que ça fait
 

@@ -8,6 +8,12 @@ Choix de sécurité : **le serveur ne commande jamais le poêle directement.** I
 navigateur  --api.php-->  SQLite (file de commandes, état)  <--esp.php (jeton)--  ESP32  --radio-->  poêle
 ```
 
+## Aperçu
+
+| Accueil | Minuteur et programmes | Nouveau programme | Réglages |
+|---|---|---|---|
+| <img src="photos/application/accueil-temperature.jpg" width="200" alt="Accueil"> | <img src="photos/application/minuteur-et-programmes.jpg" width="200" alt="Minuteur et programmes"> | <img src="photos/application/nouveau-programme.jpg" width="200" alt="Nouveau programme"> | <img src="photos/application/reglages-mode-de-fonctionnement.jpg" width="200" alt="Réglages"> |
+
 ## Installation
 
 1. Serveur : Apache 2 + PHP 8 (extensions `pdo_sqlite`, `mbstring`). Testé sur un Raspberry Pi (Debian).
