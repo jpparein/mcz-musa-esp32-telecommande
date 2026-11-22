@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="fr" data-page="remote">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#e8662a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Poêle">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Télécommande du poêle</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --fond: #f4efe9; --carte: #ffffff; --texte: #2a211b; --doux: #7a6c61; --ligne: #e6ddd3;
+    --accent: #e8662a; --accent-texte: #ffffff; --ok: #2e9e5b; --alerte: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+      --accent: #f07a3a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+    --accent: #f07a3a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 14px 14px 104px; display: grid; gap: 12px; justify-items: center; }
+  .note { color: var(--doux); font-size: .85rem; text-align: center; margin: 0; max-width: 460px; }
+
+  /* ===== Le boitier : toutes les tailles sont en cqw (% de la largeur du boitier), il s'adapte donc a tout ecran ===== */
+  .cadre { container-type: inline-size; width: min(100%, 440px); }
+  .appareil { width: 100%; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    background: linear-gradient(160deg, #34343a 0%, #232327 60%, #1c1c20 100%); color: #ececf0;
+    border-radius: calc(11 * var(--u)); padding: calc(6 * var(--u)) calc(6 * var(--u)) calc(7 * var(--u)); display: grid; gap: calc(5 * var(--u));
+    box-shadow: 0 calc(2.5 * var(--u)) calc(7 * var(--u)) rgba(0,0,0,.35), inset 0 calc(0.4 * var(--u)) calc(0.4 * var(--u)) rgba(255,255,255,.12), inset 0 -calc(0.6 * var(--u)) calc(1 * var(--u)) rgba(0,0,0,.4); }
+  @media (min-width: 700px) { .cadre { width: min(100%, 520px); } }
+
+  .horloge { text-align: center; font-size: calc(3.1 * var(--u)); letter-spacing: .04em; font-weight: 600; color: #8d8d97; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tete { display: grid; grid-template-columns: 1fr auto 1fr; column-gap: calc(3 * var(--u)); align-items: center; padding: 0 calc(1.5 * var(--u)); font-size: calc(3.6 * var(--u)); letter-spacing: .22em; color: #a3a3ad; font-weight: 700; }
+  .lien { justify-self: end; display: inline-flex; align-items: center; gap: calc(1.6 * var(--u)); letter-spacing: .04em; font-weight: 600; font-size: calc(3.2 * var(--u)); }
+  .lien i { width: calc(2.4 * var(--u)); height: calc(2.4 * var(--u)); border-radius: 50%; background: var(--alerte); }
+  .lien.ok i { background: #4cc27c; box-shadow: 0 0 calc(1.6 * var(--u)) #4cc27c; }
+  .lien.hors { color: #ff9a8c; animation: clignote 1s ease-in-out infinite; }
+  @keyframes clignote { 50% { opacity: .3; } }
+
+  /* ----- Ecran ----- */
+  .ecran { position: relative; border-radius: calc(5 * var(--u)); padding: calc(4.5 * var(--u)) calc(4.5 * var(--u)) calc(4 * var(--u)); color: #14231a; display: grid; gap: calc(3.2 * var(--u));
+    background: linear-gradient(180deg, #d3dfcf 0%, #bdcab8 100%);
+    box-shadow: inset 0 calc(0.8 * var(--u)) calc(2.2 * var(--u)) rgba(0,0,0,.35), inset 0 0 0 calc(0.5 * var(--u)) rgba(0,0,0,.28), 0 calc(0.3 * var(--u)) calc(0.3 * var(--u)) rgba(255,255,255,.12); }
+  .ecran.eteint .vif { opacity: .22; }
+  .modes { display: flex; gap: calc(1.6 * var(--u)); }
+  .mode-puce { flex: 1; text-align: center; font-size: calc(3.5 * var(--u)); font-weight: 800; letter-spacing: .06em; padding: calc(1.1 * var(--u)) 0; border-radius: calc(1.8 * var(--u));
+    border: calc(0.45 * var(--u)) solid rgba(20,35,26,.28); color: rgba(20,35,26,.4); }
+  button.mode-puce.invite { animation: invite 1.1s ease-in-out infinite; }
+  button.mode-puce.invite::after { content: '\25B8'; margin-left: calc(1.2 * var(--u)); }
+  @keyframes invite { 50% { box-shadow: 0 0 0 calc(.9 * var(--u)) rgba(20,35,26,.35); } }
+  @media (prefers-reduced-motion: reduce) { button.mode-puce.invite { animation: none; } }
+  .mode-puce.actif { background: #14231a; color: #cfe0c9; border-color: #14231a; }
+  .centre { display: grid; grid-template-columns: 1fr auto; gap: calc(3 * var(--u)); align-items: end; }
+  #blocCons { display: grid; justify-items: end; text-align: right; }
+  .etiq { font-size: calc(3 * var(--u)); font-weight: 800; letter-spacing: .12em; opacity: .62; }
+  .grand { font-size: calc(21 * var(--u)); font-weight: 800; line-height: .95; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .grand sup, .moyen sup { font-size: .38em; font-weight: 700; vertical-align: top; position: relative; top: .25em; margin-left: .05em; }
+  .moyen { font-size: calc(11.5 * var(--u)); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .moyen.fige { opacity: .5; }
+  .bas { display: grid; grid-template-columns: 1.1fr 1fr; gap: calc(3 * var(--u)); align-items: end; border-top: calc(0.45 * var(--u)) solid rgba(20,35,26,.22); padding-top: calc(3 * var(--u)); }
+  .barres { display: flex; gap: calc(1.4 * var(--u)); align-items: flex-end; height: calc(11 * var(--u)); margin-top: calc(1.2 * var(--u)); }
+  .barres span { flex: 1; border-radius: calc(0.8 * var(--u)); background: rgba(20,35,26,.16); }
+  .barres span:nth-child(1) { height: 28%; } .barres span:nth-child(2) { height: 46%; } .barres span:nth-child(3) { height: 64%; }
+  .barres span:nth-child(4) { height: 82%; } .barres span:nth-child(5) { height: 100%; }
+  .barres span.on { background: #14231a; }
+  .barres.auto span { background: transparent; box-shadow: inset 0 0 0 calc(0.4 * var(--u)) rgba(20,35,26,.35); opacity: .6; }
+  .barres.auto span.on { background: #14231a; box-shadow: none; opacity: 1; }
+  .vents { display: grid; gap: calc(0.8 * var(--u)); margin-top: calc(0.8 * var(--u)); }
+  .vent-l { display: grid; grid-template-columns: calc(5.6 * var(--u)) 1fr calc(4 * var(--u)); align-items: center; gap: calc(1.6 * var(--u)); width: 100%;
+    padding: calc(0.9 * var(--u)) calc(1.3 * var(--u)); border: calc(0.4 * var(--u)) solid transparent; border-radius: calc(1.8 * var(--u));
+    background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+  .vent-l small { font-size: calc(2.7 * var(--u)); font-weight: 800; letter-spacing: .08em; opacity: .62; }
+  .vent-l em { font-style: normal; font-size: calc(3 * var(--u)); font-weight: 700; opacity: .55; text-align: right; }
+  .vb { display: flex; gap: calc(0.9 * var(--u)); align-items: flex-end; height: calc(4.6 * var(--u)); }
+  .vb i { flex: 1; border-radius: calc(0.4 * var(--u)); background: rgba(20,35,26,.16); }
+  .vb i:nth-child(1) { height: 30%; } .vb i:nth-child(2) { height: 45%; } .vb i:nth-child(3) { height: 62%; }
+  .vb i:nth-child(4) { height: 80%; } .vb i:nth-child(5) { height: 100%; }
+  .vb i.on { background: #14231a; }
+  .vent-l.auto .vb i { background: transparent; box-shadow: inset 0 0 0 calc(0.4 * var(--u)) #14231a; }
+  .vent-l.sel { border-color: #14231a; background: rgba(20,35,26,.1); animation: sel-lent 1.2s ease-in-out infinite; }
+  @keyframes sel-lent { 50% { background: rgba(20,35,26,.02); } }
+  .vent-l:focus-visible { outline: calc(0.8 * var(--u)) solid #14231a; outline-offset: calc(0.3 * var(--u)); }
+  @media (prefers-reduced-motion: reduce) { .vent-l.sel { animation: none; } }
+  .alerte-ecran { position: absolute; inset: 0; border-radius: calc(5 * var(--u)); display: grid; place-items: center; text-align: center; padding: calc(6 * var(--u));
+    background: rgba(20,35,26,.86); color: #ffd6cf; font-weight: 800; font-size: calc(4.6 * var(--u)); line-height: 1.25; }
+
+  /* ----- Clavier ----- */
+  .clavier { display: grid; grid-template-columns: 1fr calc(27 * var(--u)) 1fr; gap: calc(4 * var(--u)); align-items: center; }
+  .touche { border: 0; font: inherit; color: #f0f0f4; cursor: pointer; display: grid; place-items: center; align-content: center; gap: calc(0.6 * var(--u));
+    border-radius: calc(6 * var(--u)); min-height: calc(18 * var(--u)); font-size: calc(4.6 * var(--u)); font-weight: 800; letter-spacing: .04em;
+    background: linear-gradient(180deg, #46464e 0%, #323238 100%);
+    box-shadow: 0 calc(1 * var(--u)) 0 #18181c, 0 calc(1.6 * var(--u)) calc(2.4 * var(--u)) rgba(0,0,0,.45), inset 0 calc(0.35 * var(--u)) calc(0.3 * var(--u)) rgba(255,255,255,.18);
+    transition: transform .08s, box-shadow .08s; }
+  .touche:active { transform: translateY(calc(0.9 * var(--u))); box-shadow: 0 calc(0.1 * var(--u)) 0 #18181c, 0 calc(0.4 * var(--u)) calc(0.8 * var(--u)) rgba(0,0,0,.45), inset 0 calc(0.35 * var(--u)) calc(0.3 * var(--u)) rgba(255,255,255,.12); }
+  .touche:focus-visible { outline: calc(0.8 * var(--u)) solid var(--accent); outline-offset: calc(0.6 * var(--u)); }
+  .touche small { font-size: calc(2.9 * var(--u)); font-weight: 700; color: #b4b4be; letter-spacing: .1em; }
+  .touche.signe { font-size: calc(11 * var(--u)); font-weight: 600; line-height: 1; }
+  .touche.power { width: calc(27 * var(--u)); height: calc(27 * var(--u)); min-height: 0; border-radius: 50%; color: #fff;
+    background: radial-gradient(circle at 35% 28%, #5a5a63 0%, #2f2f35 70%); }
+  .touche.power svg { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
+  .touche.power.on { background: radial-gradient(circle at 35% 28%, #ffae6b 0%, #e8662a 62%, #b8431a 100%);
+    box-shadow: 0 calc(1 * var(--u)) 0 #7e2c0e, 0 0 calc(6 * var(--u)) rgba(232,102,42,.65), inset 0 calc(0.5 * var(--u)) calc(0.5 * var(--u)) rgba(255,255,255,.35); }
+  .rang2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(4 * var(--u)); }
+  .rang2 .touche { min-height: calc(19 * var(--u)); }
+  .rang2 .touche b { font-size: calc(7.4 * var(--u)); line-height: 1; }
+  .rang-mode { display: grid; grid-template-columns: 1fr 1fr; gap: calc(4 * var(--u)); }
+  .touche.large { min-height: calc(15 * var(--u)); grid-auto-flow: column; gap: calc(3 * var(--u)); }
+  .touche.large b { color: #cfe0c9; }
+
+  .menu { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 4px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: var(--carte); border-top: 1px solid var(--ligne); }
+  .menu a { flex: 1; max-width: 200px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
+    color: var(--doux); text-decoration: none; font-size: .72rem; font-weight: 600; }
+  .menu a svg { width: 24px; height: 24px; }
+  .menu a[aria-current="page"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .menu a:focus-visible { outline: 3px solid var(--accent); }
+  @media (prefers-reduced-motion: reduce) { .lien.hors { animation: none; } .touche { transition: none; } }
+  html.verif main { visibility: hidden; }
+  .bascule { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--ligne); width: min(100%, 440px); }
+  .bascule button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--doux);
+    font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .bascule button.actif { background: var(--carte); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+  .bascule button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .appareil { --u: 1cqw; }
+  /* Paysage (tablette, telephone couche, ordinateur) : ecran a gauche, touches a droite */
+  @media (orientation: landscape) {
+    main { max-width: none; }
+    .appareil { min-height: calc(100svh - 150px); grid-template-rows: auto 1fr 1fr; }
+    .ecran { --u: calc(100cqw / 207 * 1.3); align-self: stretch; align-content: space-between; }
+    .appareil { grid-template-columns: 1.9fr repeat(4, 1fr); }
+    .cadre { width: min(100%, 2000px, max(380px, calc((100svh - 150px) / .5))); }
+    .appareil { --u: calc(100cqw / 207); grid-template-columns: 1.25fr repeat(4, 1fr); column-gap: calc(4 * var(--u)); align-items: stretch; }
+    .tete { grid-column: 1 / -1; }
+    .ecran { grid-column: 1; grid-row: 2 / span 2; align-self: center; }
+    .clavier { grid-column: 2 / -1; grid-row: 2; }
+    .rang-mode { grid-column: 2 / -1; grid-row: 3; }
+    .rang2 { display: contents; }
+    .touche.large { grid-auto-flow: row; min-height: calc(19 * var(--u)); gap: calc(.6 * var(--u)); }
+  }
+  @media (orientation: landscape) and (min-height: 501px) and (max-height: 700px) { .ecran { --u: calc(100cqw / 207 * 1.12); } .appareil { grid-template-columns: 1.5fr repeat(4, 1fr); } }
+  /* Telephone couche : peu de hauteur, on compacte le haut et le menu */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .cadre { width: min(100%, 2000px, max(380px, calc((100svh - 74px) / .5))); }
+    #aide { display: none; }
+    .appareil { min-height: calc(100svh - 74px); grid-template-columns: 1.25fr repeat(4, 1fr); }
+    .ecran { --u: calc(100cqw / 207); }
+    main { padding-top: 6px; padding-bottom: 60px; gap: 6px; }
+    .bascule button { min-height: 34px; }
+    .menu { padding-top: 3px; padding-bottom: calc(3px + env(safe-area-inset-bottom)); }
+    .menu a { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px; }
+    .menu a svg { width: 20px; height: 20px; }
+  }
+
+  /* ----- Touche TIMER sur l'ecran ----- */
+  button.mode-puce { font: inherit; font-size: calc(3.5 * var(--u)); font-weight: 800; letter-spacing: .06em; background: transparent; cursor: pointer; position: relative; }
+  button.mode-puce:focus-visible { outline: calc(.8 * var(--u)) solid #14231a; outline-offset: calc(.5 * var(--u)); }
+  .prochain { display: flex; align-items: center; gap: calc(1.6 * var(--u)); font-size: calc(3.1 * var(--u)); font-weight: 800; letter-spacing: .03em; border-top: calc(.3 * var(--u)) solid rgba(20,35,26,.25); padding-top: calc(2 * var(--u)); }
+  .prochain[hidden] { display: none; }
+  .prochain svg { width: calc(4.4 * var(--u)); height: calc(4.4 * var(--u)); fill: none; stroke: #14231a; stroke-width: 2; stroke-linecap: round; flex: none; }
+  .touche { position: relative; }
+  .touche i { position: absolute; top: calc(3.6 * var(--u)); right: calc(6 * var(--u)); width: calc(2.4 * var(--u)); height: calc(2.4 * var(--u)); border-radius: 50%; background: var(--accent); }
+  button.mode-puce i { position: absolute; top: calc(.6 * var(--u)); right: calc(1 * var(--u)); width: calc(2 * var(--u)); height: calc(2 * var(--u)); border-radius: 50%; background: #14231a; }
+  button.mode-puce.avec { color: #14231a; border-color: #14231a; }
+
+  /* ----- Panneau minuteur et programmes ----- */
+  html.blocage { overflow: hidden; }
+  .feuille { position: fixed; inset: 0; z-index: 40; background: rgba(8,8,10,.62); display: grid; place-items: center; padding: 12px; }
+  .feuille-corps { width: min(100%, 560px); max-height: calc(100svh - 24px); overflow: auto; overscroll-behavior: contain;
+    background: linear-gradient(160deg, #34343a 0%, #232327 70%); color: #ececf0; border-radius: 22px; padding: 16px 16px 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.12); }
+  .feuille h2 { margin: 0; font-size: 1.15rem; letter-spacing: .02em; color: #ececf0; text-transform: none; }
+  .feuille h3 { margin: 18px 0 8px; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: #a3a3ad; }
+  .f-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .f-btn { min-height: 46px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-weight: 700; color: #f0f0f4; cursor: pointer;
+    background: linear-gradient(180deg, #46464e 0%, #323238 100%); box-shadow: 0 2px 0 #18181c, inset 0 1px 0 rgba(255,255,255,.16); }
+  .f-btn:active { transform: translateY(1px); }
+  .f-btn:focus-visible, .f-chip:focus-visible, .f-inter:focus-visible, .f-icone:focus-visible, .f-heure:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .f-btn.actif { background: var(--accent); color: var(--accent-texte); }
+  .f-btn.plein { background: var(--accent); color: var(--accent-texte); }
+  .f-btn.petit { min-height: 38px; font-size: .9rem; }
+  .f-fermer { width: 46px; padding: 0; font-size: 1.5rem; line-height: 1; }
+  .f-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .f-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; margin-top: 10px; }
+  .f-liste { display: grid; gap: 8px; margin-top: 10px; }
+  .f-vide { color: #a3a3ad; font-size: .92rem; padding: 4px 0; }
+  .f-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(255,255,255,.06); border-radius: 14px; padding: 10px 12px; }
+  .f-item small { display: block; color: #a3a3ad; }
+  .f-prog { background: rgba(255,255,255,.06); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+  .f-prog.inactif .f-heure-aff, .f-prog.inactif .f-jours, .f-prog.inactif .f-resume { opacity: .45; }
+  .f-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .f-heure-aff { font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em; }
+  .f-heure-aff span { font-size: .85rem; font-weight: 700; color: var(--accent); margin-left: 8px; letter-spacing: .04em; }
+  .f-jours { display: flex; gap: 5px; }
+  .f-jours span { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700; background: rgba(255,255,255,.08); color: #8d8d97; }
+  .f-jours span.on { background: var(--accent); color: var(--accent-texte); }
+  .f-resume { color: #b4b4be; font-size: .9rem; }
+  .f-actions { display: flex; align-items: center; gap: 8px; }
+  .f-inter { position: relative; width: 52px; height: 30px; border: 0; border-radius: 99px; background: #55555e; cursor: pointer; padding: 0; transition: background .15s; }
+  .f-inter::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .f-inter[aria-checked="true"] { background: var(--ok); }
+  .f-inter[aria-checked="true"]::after { transform: translateX(22px); }
+  .f-icone { width: 44px; height: 44px; border: 0; border-radius: 12px; background: rgba(255,255,255,.08); color: #ececf0; cursor: pointer; display: grid; place-items: center; font-size: 1.1rem; }
+  .f-form { display: grid; gap: 12px; margin-top: 12px; background: rgba(255,255,255,.05); border-radius: 14px; padding: 12px; }
+  .f-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .f-chip { min-width: 44px; min-height: 44px; border: 2px solid #4a4a53; border-radius: 12px; background: transparent; color: #cfcfd8; font: inherit; font-weight: 700; cursor: pointer; padding: 0 10px; }
+  .f-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+  .f-heure { min-height: 48px; font: inherit; font-size: 1.2rem; font-weight: 700; color: #ececf0; background: #1a1a1e; border: 2px solid #4a4a53; border-radius: 12px; padding: 0 12px; color-scheme: dark; }
+  .f-sous { font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #9a9aa6; margin-top: 4px; }
+  .f-pas { display: flex; align-items: center; gap: 14px; }
+  .f-pas b { min-width: 74px; text-align: center; font-size: 1.3rem; }
+  .f-vents { display: grid; gap: 8px; }
+  .f-vents label { display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 8px; font-weight: 700; color: #cfcfd8; }
+  .f-sel { min-height: 44px; border: 2px solid #4a4a53; border-radius: 12px; background: #1b1b20; color: #fff; font: inherit; font-weight: 700; padding: 0 8px; width: 100%; }
+  /* Telephone : rien ne doit depasser du panneau */
+  .feuille-corps, .feuille-corps * { box-sizing: border-box; }
+  .f-form { grid-template-columns: minmax(0, 1fr); }
+  .f-form > *, .f-seg > *, .f-ligne > * { min-width: 0; }
+  .f-form .f-ligne { gap: 8px; }
+  .f-heure { width: 128px; flex: 0 0 auto; padding: 0 8px; font-size: 1.1rem; }
+  .f-seg .f-btn { padding: 0 6px; white-space: nowrap; font-size: .95rem; }
+  .f-chip { min-width: 42px; padding: 0 8px; }
+  .f-sel { min-width: 0; }
+  @media (max-width: 400px) { .f-chip { min-width: 38px; min-height: 42px; padding: 0 6px; } .f-chips { gap: 5px; } }
+  .f-opt { display: grid; gap: 6px; }
+  .f-opt label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .f-opt label input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .f-opt .f-chips.ferme { opacity: .4; }
+  .f-msg { min-height: 1.3em; margin: 10px 0 0; font-size: .9rem; color: #ffb4a8; }
+  @media (prefers-reduced-motion: reduce) { .f-inter, .f-inter::after { transition: none; } }
+  .touche.large b:empty { display: none; }
+  .lune { background: transparent; border: calc(0.4 * var(--u)) solid transparent; border-radius: calc(1.8 * var(--u)); padding: calc(.6 * var(--u)) calc(1.2 * var(--u)); color: #14231a; cursor: pointer; line-height: 0; margin-top: calc(.8 * var(--u)); }
+  .lune { display: inline-flex; align-items: center; gap: calc(1.4 * var(--u)); font-weight: 800; font-size: calc(3.4 * var(--u)); }
+  .lune svg { width: calc(6 * var(--u)); height: calc(6 * var(--u)); fill: none; stroke: #14231a; stroke-width: 1.8; opacity: .35; }
+  .lune.on svg { fill: #14231a; opacity: 1; }
+  .lune span { font-size: calc(2.6 * var(--u)); letter-spacing: .06em; opacity: .4; line-height: 1; }
+  .lune.on span { opacity: 1; }
+  .lune.sel { border-color: #14231a; background: rgba(20,35,26,.1); }
+  .touche.verrou { opacity: .4; }
+  button.mode-puce:disabled { opacity: .45; cursor: not-allowed; }
+  .lune:focus-visible { outline: calc(.8 * var(--u)) solid #14231a; }
+
+  /* ----- Panneau minuteur : meme style que l'ecran LCD de la telecommande ----- */
+  .feuille { background: rgba(8,8,10,.7); }
+  .feuille-corps { background: linear-gradient(180deg, #d3dfcf 0%, #bdcab8 100%); color: #14231a; border-radius: 26px;
+    box-shadow: 0 0 0 9px #26262b, 0 0 0 11px #3a3a42, 0 14px 44px rgba(0,0,0,.6), inset 0 2px 6px rgba(0,0,0,.18); }
+  .feuille h2, .feuille h3 { color: #14231a; }
+  .feuille h3, .f-sous { color: #4d6354; }
+  .f-btn { background: transparent; color: #14231a; border: 2px solid #14231a; box-shadow: none; }
+  .f-btn:active { transform: none; background: rgba(20,35,26,.12); }
+  .f-btn.actif, .f-btn.plein { background: #14231a; color: #cfe0c9; }
+  .f-btn:focus-visible, .f-chip:focus-visible, .f-inter:focus-visible, .f-icone:focus-visible, .f-heure:focus-visible, .f-sel:focus-visible { outline-color: #14231a; }
+  .f-chip { border-color: rgba(20,35,26,.45); color: #14231a; }
+  .f-chip.on { background: #14231a; border-color: #14231a; color: #cfe0c9; }
+  .f-item, .f-prog { background: rgba(20,35,26,.08); }
+  .f-form { background: rgba(20,35,26,.07); }
+  .f-vide, .f-resume, .f-item small { color: #4d6354; }
+  .f-heure-aff span { color: #14231a; opacity: .7; }
+  .f-jours span { background: rgba(20,35,26,.1); color: #4d6354; }
+  .f-jours span.on { background: #14231a; color: #cfe0c9; }
+  .f-inter { background: rgba(20,35,26,.3); }
+  .f-inter[aria-checked="true"] { background: #14231a; }
+  .f-icone { background: rgba(20,35,26,.1); color: #14231a; }
+  .f-heure, .f-sel { background: rgba(255,255,255,.35); color: #14231a; border-color: rgba(20,35,26,.45); color-scheme: light; }
+  .f-vents label { color: #14231a; }
+  .f-pas b { color: #14231a; }
+  .f-msg { color: #7a1d12; }
+
+  .bandeau-secours { width: min(100%, 440px); display: grid; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--alerte); color: #fff; font-weight: 600; font-size: .95rem; }
+  .bandeau-secours a { background: #fff; color: var(--alerte); font-weight: 800; padding: 12px 16px; border-radius: 10px; text-decoration: none; text-align: center; }
+  .bandeau-secours a:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+</style>
+<script src="mode.js"></script>
+<script src="theme.js"></script>
+</head>
+<body>
+<main>
+  <div class="bandeau-secours" id="bandeauSecours" role="alert" hidden>
+    <span>Le Raspberry Pi ne répond pas. Tu peux piloter le poêle avec le mode secours (chez toi seulement).</span>
+    <a href="http://192.168.1.50/">Ouvrir le mode secours</a>
+  </div>
+  <div class="cadre">
+  <div class="appareil" id="appareil">
+    <div class="tete"><span>MCZ</span><span class="horloge" id="horloge" aria-label="Date et heure"></span><span class="lien" id="lien"><i></i><span id="texteLien">ESP32</span></span></div>
+
+    <div class="ecran eteint" id="ecran" aria-live="polite">
+      <div class="modes" id="modes">
+        <button class="mode-puce" type="button" data-m="MAN" aria-label="Mode MAN">MAN</button>
+        <button class="mode-puce" type="button" data-m="AUTO" aria-label="Mode AUTO">AUTO</button>
+        <button class="mode-puce" type="button" data-m="ECO" aria-label="Mode ECO">ECO</button>
+      </div>
+      <div class="centre vif-zone">
+        <div>
+          <div class="etiq">AMBIANCE</div>
+          <div class="grand" id="tAmb">--,-<sup>°C</sup></div>
+        </div>
+        <div id="blocCons">
+          <div class="etiq">CONSIGNE</div>
+          <div class="moyen" id="tCons">--,-<sup>°C</sup></div>
+          <button class="lune" id="lune" type="button" aria-label="Mode nuit : flamme 1, le poêle coupe les ventilos" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg><span id="luneTxt"></span></button>
+        </div>
+      </div>
+      <div class="prochain" id="prochain" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span id="prochainTxt"></span>
+      </div>
+      <div class="bas vif">
+        <div>
+          <div class="etiq" id="flammeEtiq">FLAMME</div>
+          <div class="barres" id="barres"><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div>
+          <div class="etiq">VENTILOS</div>
+          <div class="vents" id="vents">
+            <button class="vent-l" type="button" data-v="1" aria-label="Ventilateur 1"><small>V1</small><span class="vb"><i></i><i></i><i></i><i></i><i></i></span><em>–</em></button>
+            <button class="vent-l" type="button" data-v="2" aria-label="Ventilateur 2"><small>V2</small><span class="vb"><i></i><i></i><i></i><i></i><i></i></span><em>–</em></button>
+            <button class="vent-l" type="button" data-v="3" aria-label="Ventilateur 3"><small>V3</small><span class="vb"><i></i><i></i><i></i><i></i><i></i></span><em>–</em></button>
+          </div>
+        </div>
+      </div>
+      <div class="alerte-ecran" id="alerteEcran" hidden>ESP32 hors ligne<br>Les ordres attendent son retour.</div>
+    </div>
+
+    <div class="clavier">
+      <button class="touche signe" id="kMoins" type="button" aria-label="Diminuer">−</button>
+      <button class="touche power" id="kPower" type="button" aria-label="Marche ou arrêt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>
+      </button>
+      <button class="touche signe" id="kPlus" type="button" aria-label="Augmenter">+</button>
+    </div>
+
+    <div class="rang-mode">
+      <button class="touche large" id="kMode" type="button" aria-label="Minuteur et programmes"><small>TIMER</small><b id="kModeVal"></b><i id="pointTimer" hidden></i></button>
+      <button class="touche large" id="kVent" type="button" aria-label="Choisir un ventilateur" aria-pressed="false"><small>VENTILO</small><b id="kVentVal"></b></button>
+    </div>
+
+  </div>
+  </div>
+  <p class="note" id="aide"></p>
+</main>
+
+
+<div class="feuille" id="feuille" role="dialog" aria-modal="true" aria-labelledby="feuilleTitre" hidden>
+  <div class="feuille-corps" id="feuilleCorps">
+    <div class="f-tete">
+      <h2 id="feuilleTitre">Minuteur et programmes</h2>
+      <button class="f-btn f-fermer" id="fFermer" type="button" aria-label="Fermer">&times;</button>
+    </div>
+
+    <h3>Minuteur</h3>
+    <div class="f-seg" id="fSegMin" role="group" aria-label="Action du minuteur">
+      <button class="f-btn actif" type="button" data-a="off">Éteindre dans</button>
+      <button class="f-btn" type="button" data-a="on">Allumer dans</button>
+    </div>
+    <div class="f-grille" id="fPresets"></div>
+    <div class="f-liste" id="fListeMin"></div>
+
+    <h3>Programmes de la semaine</h3>
+    <div class="f-liste" id="fListeProg"></div>
+    <div style="margin-top:10px"><button class="f-btn plein" id="fAjout" type="button" style="width:100%">Ajouter un programme</button></div>
+
+    <div class="f-form" id="fForm" hidden>
+      <strong id="fFormTitre">Nouveau programme</strong>
+      <div class="f-chips" id="fJours" role="group" aria-label="Jours"></div>
+      <div class="f-chips" id="fRacc"></div>
+      <div class="f-ligne">
+        <input class="f-heure" id="fHeure" type="time" value="07:00" aria-label="Heure">
+        <div class="f-seg" id="fAction" role="group" aria-label="Action" style="flex:1">
+          <button class="f-btn actif" type="button" data-a="on">Allumer</button>
+          <button class="f-btn" type="button" data-a="off">Éteindre</button>
+        </div>
+      </div>
+      <div id="fReglages" class="f-liste"></div>
+      <div class="f-seg">
+        <button class="f-btn" id="fAnnuler" type="button">Annuler</button>
+        <button class="f-btn plein" id="fValider" type="button">Enregistrer</button>
+      </div>
+    </div>
+    <p class="f-msg" id="fMsg" role="status"></p>
+  </div>
+</div>
+
+<nav class="menu" aria-label="Navigation">
+  <a href="index.html" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.2 1.4 1 2.2 1.8 2.2C10.3 8 11 5.5 12 3z"/></svg>
+    Poêle</a>
+  <a href="aide.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7"/><path d="M12 17h.01"/></svg>
+    Aide</a>
+  <a href="reglages.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Réglages</a>
+</nav>
+
+<script>
+const el = id => document.getElementById(id);
+let apresTimer = false, etat = null, consigne = 20, enAttente = {}, selVent = 0, selTimer = null;
+
+async function post(url, donnees) {
+  const rep = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'poele' }, body: JSON.stringify(donnees || {}) });
+  return rep.ok;
+}
+const fmt = v => v.toFixed(1).replace('.', ',');
+const niveau = v => (v === null || v === undefined) ? '–' : (v === 6 ? 'A' : String(v));
+
+function afficher() {
+  const e = etat; if (!e) return;
+  const allume = e.poele === 'allume';
+  const att = {};
+  e.commandes.forEach(c => { if ((c.statut === 'attente' || c.statut === 'envoi') && !(c.type in att)) att[c.type] = c.valeur; });
+  const val = t => (t in att ? Number(att[t]) : e[t]);
+  const mode = ('mode' in att) ? att.mode : e.mode;
+  const marche = ('marche' in att) ? att.marche === 'on' : allume;
+
+  el('lien').className = 'lien ' + (e.esp_connecte ? 'ok' : 'hors');
+  el('texteLien').textContent = e.esp_connecte ? '' : 'ESP32 hors ligne';
+  el('alerteEcran').hidden = e.esp_connecte;
+  el('ecran').classList.toggle('eteint', !marche);
+  el('kPower').classList.toggle('on', marche);
+  el('kPower').setAttribute('aria-pressed', marche);
+
+  document.querySelectorAll('.mode-puce').forEach(p => p.classList.toggle('actif', !apresTimer && p.dataset.m === mode));
+  majLune();
+  
+
+  const ok = e.temperature !== null && e.mesure_age !== null && e.mesure_age < 300;
+  el('tAmb').innerHTML = (ok ? fmt(e.temperature) : '--,-') + '<sup>°C</sup>';
+  el('tCons').innerHTML = Math.round(consigne) + '<sup>°C</sup>';
+  el('tCons').classList.toggle('fige', mode === 'MAN' || !!e.nuit);
+  document.querySelectorAll('#blocCons .etiq, #tCons').forEach(x => { x.style.visibility = (mode === 'MAN' || e.nuit) ? 'hidden' : 'visible'; });
+
+  const f = val('flamme');
+  // En AUTO et ECO, le poele regle sa flamme seul et la radio ne la donne pas : on n'affiche pas de niveau (comme la vraie telecommande)
+  const flAuto = mode !== 'MAN' && !etat.nuit;
+  el('barres').classList.toggle('auto', flAuto);
+  el('flammeEtiq').textContent = !flAuto ? 'FLAMME' : (mode === 'ECO' && f === 0) ? 'ECO : poêle en veille' : (mode === 'ECO' ? 'ECO' : 'AUTO') + ' : puissance max ' + (f ? f : '-') + '/5';
+  document.querySelectorAll('#barres span').forEach((b, i) => b.classList.toggle('on', f !== null && f !== undefined && i < f));
+  majVentilos(val);
+  const verrou = !!(etat.nuit && selVent !== 4);
+  const nuit = !!etat.nuit;
+  el('kMoins').classList.toggle('verrou', verrou); el('kPlus').classList.toggle('verrou', verrou);
+  el('kMode').classList.toggle('verrou', nuit);
+  document.querySelectorAll('.mode-puce[data-m]').forEach(b => { b.disabled = nuit; });
+  el('aide').textContent = verrou
+    ? 'Mode nuit (NO AIR) actif : tout est verrouillé (flamme, ventilos, mode, timer). Pour sortir : touche la lune, ou VENTILO puis −.'
+    : selVent === 4
+    ? 'LUNE (NO AIR) : + l’active (flamme 1, ventilos coupés), − la désactive et remet les réglages d’avant.'
+    : selVent
+    ? 'Ventilateur ' + selVent + ' choisi : + et − règlent son niveau (0 à 5, puis A pour automatique).'
+    : (mode === 'MAN' ? 'En MAN, + et − règlent la flamme. ' : 'En ' + mode + ', + et − règlent la consigne. ') + 'Touche MAN, AUTO ou ECO sur l’écran pour changer de mode. VENTILO choisit un ventilateur, puis LUNE (NO AIR).';
+  if (typeof majTimer === 'function') majTimer();
+}
+
+let chargeEnCours = false, chargeDebut = 0, dernierPiOk = Date.now();   // dernier moment ou le Pi a repondu
+async function charger() {
+  // une requete bloquee est abandonnee au bout de 5 s, pour ne jamais figer la page
+  if (chargeEnCours && Date.now() - chargeDebut < 6000) return;
+  chargeEnCours = true; chargeDebut = Date.now();
+  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 5000);
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch('api.php?action=etat', { cache: 'no-store', signal: ac.signal }),
+      fetch('reglages_api.php?action=etat', { cache: 'no-store', signal: ac.signal })
+    ]);
+    etat = await r1.json();
+    const g = await r2.json();
+    if (typeof g.consigne === 'number' && !consigneModifiee) consigne = g.consigne;
+    afficher();
+    dernierPiOk = Date.now(); el('bandeauSecours').hidden = true;
+  } catch (e) {
+    // le Pi ne repond plus depuis 30 s : on propose le mode secours (page de l'ESP32)
+    if (Date.now() - dernierPiOk >= 30000) el('bandeauSecours').hidden = false;
+  }
+  finally { clearTimeout(to); chargeEnCours = false; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) charger(); });
+window.addEventListener('focus', charger);
+window.addEventListener('pageshow', charger);
+
+let consigneModifiee = false, minuterieConsigne = null;
+function commande(type, valeur) {
+  return post('api.php?action=commande', { type, valeur }).then(ok => { charger(); return ok; });
+}
+function courant(type) {
+  const c = etat && etat.commandes.find(x => x.type === type && (x.statut === 'attente' || x.statut === 'envoi'));
+  return c ? Number(c.valeur) : (etat ? etat[type] : null);
+}
+function modeCourant() {
+  const c = etat && etat.commandes.find(x => x.type === 'mode' && (x.statut === 'attente' || x.statut === 'envoi'));
+  return c ? c.valeur : (etat ? etat.mode : 'MAN');
+}
+function marcheCourante() {
+  const c = etat && etat.commandes.find(x => x.type === 'marche' && (x.statut === 'attente' || x.statut === 'envoi'));
+  return c ? c.valeur === 'on' : (etat && etat.poele === 'allume');
+}
+
+el('kPower').addEventListener('click', () => { if (etat) commande('marche', marcheCourante() ? 'off' : 'on'); });
+document.querySelectorAll('.mode-puce[data-m]').forEach(b => b.addEventListener('click', () => { if (etat && !etat.nuit) commande('mode', b.dataset.m); }));
+el('kMode').addEventListener('click', () => { if (!(etat && etat.nuit)) ouvrirFeuille(); });
+// Mode nuit (comme NO AIR de la vraie telecommande) : flamme 1 et ventilos coupes ; on garde les reglages pour le reveil
+function majLune() {
+  const l = el('lune'), on = !!(etat && etat.nuit);
+  l.classList.toggle('on', on);
+  l.classList.toggle('sel', selVent === 4);
+  l.setAttribute('aria-pressed', on ? 'true' : 'false');
+  el('luneTxt').textContent = 'NO AIR';
+}
+async function basculerNuit(actif) {
+  if (!etat || !!etat.nuit === actif) return;
+  if (actif) {
+    const sauve = { flamme: courant('flamme'), vent1: courant('vent1'), vent2: courant('vent2'), vent3: courant('vent3') };
+    etat.nuit = true; etat.nuit_sauve = sauve; afficher();
+    await post('reglages_api.php?action=nuit', { actif: true, sauve });
+    commande('flamme', '1');   // un seul ordre, comme la telecommande : le poele coupe lui-meme les ventilos au bout de ~5 min
+  } else {
+    const sv = etat.nuit_sauve || {};
+    etat.nuit = false; afficher();
+    await post('reglages_api.php?action=nuit', { actif: false });
+    ['flamme', 'vent1', 'vent2', 'vent3'].forEach(k => { if (sv[k] !== null && sv[k] !== undefined && courant(k) !== Number(sv[k])) commande(k, String(sv[k])); });
+  }
+}
+el('lune').addEventListener('click', () => basculerNuit(!(etat && etat.nuit)));
+function majVentilos(val) {
+  document.querySelectorAll('.vent-l').forEach(b => {
+    const i = Number(b.dataset.v), n = val('vent' + i);
+    const auto = n === 6, niv = (n === null || n === undefined) ? 0 : n;
+    b.classList.toggle('auto', auto);
+    b.classList.toggle('sel', selVent === i);
+    b.querySelectorAll('.vb i').forEach((x, k) => x.classList.toggle('on', !auto && k < niv));
+    b.querySelector('em').textContent = niveau(n);
+  });
+  el('kVentVal').textContent = selVent === 4 ? 'LUNE' : (selVent ? 'V' + selVent : '');
+  el('kVent').setAttribute('aria-pressed', selVent ? 'true' : 'false');
+}
+function armerSel() {
+  clearTimeout(selTimer);
+  if (selVent) selTimer = setTimeout(() => { selVent = 0; afficher(); }, 8000);
+}
+el('kVent').addEventListener('click', () => { selVent = (etat && etat.nuit) ? (selVent === 4 ? 0 : 4) : (selVent + 1) % 5; armerSel(); afficher(); });
+document.querySelectorAll('.vent-l').forEach(b => b.addEventListener('click', () => {
+  if (etat && etat.nuit) return;
+  const i = Number(b.dataset.v); selVent = (selVent === i) ? 0 : i; armerSel(); afficher();
+}));
+function plusMoins(delta) {
+  if (!etat) return;
+  if (etat.nuit && selVent !== 4) return;   // mode nuit : flamme et ventilos verrouilles
+  if (selVent === 4) {
+    basculerNuit(delta > 0);
+    armerSel(); return;
+  }
+  if (selVent) {
+    const v = courant('vent' + selVent);
+    commande('vent' + selVent, String(Math.min(6, Math.max(0, ((v === null || v === undefined) ? 0 : v) + delta))));
+    armerSel(); return;
+  }
+  if (modeCourant() === 'MAN') {
+    const f = courant('flamme');
+    commande('flamme', String(Math.min(5, Math.max(1, (f || 1) + delta))));
+  } else {
+    consigne = Math.min(30, Math.max(5, Math.round(consigne) + delta));
+    consigneModifiee = true; afficher();
+    clearTimeout(minuterieConsigne);
+    minuterieConsigne = setTimeout(async () => { await post('reglages_api.php?action=consigne', { valeur: consigne }); consigneModifiee = false; }, 500);
+  }
+}
+el('kMoins').addEventListener('click', () => plusMoins(-1));
+el('kPlus').addEventListener('click', () => plusMoins(1));
+
+
+// ================= Minuteur et programmes (panneau TIMER) =================
+const LETTRES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const NOMS_JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+let actionMin = 'off', signature = '', formulaire = { id: 0, jours: new Set([1, 2, 3, 4, 5]), action: 'on', opts: {} };
+
+function dureeTxt(sec) {
+  const m = Math.max(0, Math.round(sec / 60)), h = Math.floor(m / 60);
+  return h ? h + ' h ' + String(m % 60).padStart(2, '0') + ' min' : m + ' min';
+}
+function f_msg(t) { el('fMsg').textContent = t || ''; }
+async function appelApi(action, donnees) {
+  const rep = await fetch('api.php?action=' + action, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'poele' }, body: JSON.stringify(donnees || {}) });
+  if (!rep.ok) throw new Error('refuse');
+  return rep.json();
+}
+function ouvrirFeuille() {
+  el('feuille').hidden = false; document.documentElement.classList.add('blocage');
+  signature = ''; majTimer(); el('fFermer').focus();
+}
+function fermerFeuille() {
+  el('feuille').hidden = true; document.documentElement.classList.remove('blocage');
+  el('fForm').hidden = true; f_msg('');
+  el('kMode').focus();
+}
+el('fFermer').addEventListener('click', fermerFeuille);
+el('feuille').addEventListener('click', ev => { if (ev.target === el('feuille')) fermerFeuille(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !el('feuille').hidden) fermerFeuille(); });
+
+// --- minuteur ---
+el('fSegMin').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  actionMin = b.dataset.a;
+  el('fSegMin').querySelectorAll('button').forEach(x => x.classList.toggle('actif', x === b));
+}));
+[[15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 h'], [120, '2 h'], [180, '3 h'], [240, '4 h'], [360, '6 h'], [480, '8 h']].forEach(([min, nom]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'f-btn'; b.textContent = nom;
+  b.addEventListener('click', async () => {
+    try { await appelApi('minuteur', { action: actionMin, minutes: min }); f_msg((actionMin === 'off' ? 'Extinction' : 'Allumage') + ' dans ' + nom + '.'); signature = ''; charger(); }
+    catch (e) { f_msg('Erreur : minuteur non enregistré.'); }
+  });
+  el('fPresets').appendChild(b);
+});
+
+// --- programmes ---
+function resumeProgramme(p) {
+  if (p.action === 'off') return 'Éteindre';
+  const bits = [];
+  if (p.mode) bits.push(p.mode + (p.consigne ? ' ' + p.consigne + ' °C' : ''));
+  if (p.flamme !== null) bits.push('flamme ' + p.flamme);
+  const v = [p.vent1, p.vent2, p.vent3];
+  if (v.some(x => x !== null)) bits.push('ventilos ' + v.map(x => x === null ? '–' : (x === 6 ? 'A' : x)).join('/'));
+  return 'Allumer' + (bits.length ? ' · ' + bits.join(' · ') : '');
+}
+function carteProgramme(p) {
+  const c = document.createElement('div'); c.className = 'f-prog' + (p.actif ? '' : ' inactif');
+  const l1 = document.createElement('div'); l1.className = 'f-ligne';
+  const h = document.createElement('div'); h.className = 'f-heure-aff'; h.textContent = p.heure;
+  const sp = document.createElement('span'); sp.textContent = p.action === 'on' ? 'Allumer' : 'Éteindre'; h.appendChild(sp);
+  const act = document.createElement('div'); act.className = 'f-actions';
+  const sw = document.createElement('button');
+  sw.type = 'button'; sw.className = 'f-inter'; sw.setAttribute('role', 'switch'); sw.setAttribute('aria-checked', p.actif ? 'true' : 'false'); sw.setAttribute('aria-label', 'Programme actif');
+  sw.addEventListener('click', async () => { try { await appelApi('programme_actif', { id: p.id, actif: !p.actif }); signature = ''; charger(); } catch (e) { f_msg('Erreur.'); } });
+  const ed = document.createElement('button'); ed.type = 'button'; ed.className = 'f-icone'; ed.setAttribute('aria-label', 'Modifier'); ed.textContent = '✎';
+  ed.addEventListener('click', () => ouvrirFormulaire(p));
+  const su = document.createElement('button'); su.type = 'button'; su.className = 'f-icone'; su.setAttribute('aria-label', 'Supprimer'); su.textContent = '🗑';
+  su.addEventListener('click', async () => {
+    if (!confirm('Supprimer ce programme ?')) return;
+    try { await appelApi('programme_supprimer', { id: p.id }); signature = ''; charger(); } catch (e) { f_msg('Erreur.'); }
+  });
+  act.append(sw, ed, su); l1.append(h, act);
+  const j = document.createElement('div'); j.className = 'f-jours';
+  LETTRES.forEach((l, i) => { const d = document.createElement('span'); d.className = p.jours.includes(i + 1) ? 'on' : ''; d.textContent = l; d.setAttribute('aria-label', NOMS_JOURS[i] + (p.jours.includes(i + 1) ? ' actif' : ' inactif')); j.appendChild(d); });
+  const r = document.createElement('div'); r.className = 'f-resume'; r.textContent = resumeProgramme(p);
+  c.append(l1, j, r);
+  return c;
+}
+
+function majHorloge() {
+  const d = new Date();
+  const j = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '');
+  const h = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  el('horloge').textContent = j + ' · ' + h;
+}
+majHorloge(); setInterval(majHorloge, 10000);
+const JOURS_COURTS = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
+function majProchain() {
+  const now = new Date(etat.maintenant * 1000);
+  let best = null;
+  etat.programmes.filter(p => p.actif).forEach(p => {
+    for (let d = 0; d < 8; d++) {
+      const dt = new Date(now); dt.setDate(now.getDate() + d);
+      const jour = (dt.getDay() + 6) % 7 + 1;
+      if (!p.jours.includes(jour)) continue;
+      const [h, m] = p.heure.split(':').map(Number); dt.setHours(h, m, 0, 0);
+      if (dt > now) { if (!best || dt < best.dt) best = { dt, p, d }; break; }
+    }
+  });
+  const lignes = [];
+  const on = etat.minuteurs.filter(m => m.action === 'on').sort((a, b) => a.echeance - b.echeance)[0];
+  if (on) lignes.push('Allumage dans ' + dureeTxt(on.echeance - etat.maintenant));
+  const off = etat.minuteurs.filter(m => m.action === 'off').sort((a, b) => a.echeance - b.echeance)[0];
+  if (off) lignes.push('Extinction dans ' + dureeTxt(off.echeance - etat.maintenant));
+  if (best) {
+    const q = best.d === 0 ? '' : (best.d === 1 ? 'demain ' : JOURS_COURTS[best.dt.getDay()] + ' ');
+    lignes.push('Prog. ' + q + best.p.heure + ' ' + (best.p.action === 'on' ? 'allumer' : 'éteindre') + (best.p.action === 'on' && best.p.mode ? ' ' + best.p.mode : ''));
+  }
+  el('prochain').hidden = !lignes.length;
+  el('prochainTxt').textContent = lignes.join(' · ');
+}
+function majTimer() {
+  if (!etat) return;
+  majProchain();
+  const actifs = etat.minuteurs.length > 0 || etat.programmes.some(p => p.actif);
+  el('pointTimer').hidden = !actifs;
+  el('kMode').classList.toggle('avec', actifs);
+  if (el('feuille').hidden) return;
+  const sig = JSON.stringify([etat.minuteurs, etat.programmes, Math.floor(etat.maintenant / 60)]);
+  if (sig === signature) return;
+  signature = sig;
+  const lm = el('fListeMin'); lm.textContent = '';
+  etat.minuteurs.forEach(m => {
+    const it = document.createElement('div'); it.className = 'f-item';
+    const g = document.createElement('div');
+    const a = document.createElement('strong'); a.textContent = (m.action === 'off' ? 'Extinction' : 'Allumage') + ' dans ' + dureeTxt(m.echeance - etat.maintenant);
+    const h = document.createElement('small'); h.textContent = 'à ' + new Date(m.echeance * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    g.append(a, h);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'f-btn petit'; b.textContent = 'Annuler';
+    b.addEventListener('click', async () => { try { await appelApi('minuteur_annuler', { id: m.id }); signature = ''; charger(); } catch (e) { f_msg('Erreur.'); } });
+    it.append(g, b); lm.appendChild(it);
+  });
+  const lp = el('fListeProg'); lp.textContent = '';
+  if (!etat.programmes.length) { const v = document.createElement('div'); v.className = 'f-vide'; v.textContent = 'Aucun programme pour l\'instant.'; lp.appendChild(v); }
+  etat.programmes.forEach(p => lp.appendChild(carteProgramme(p)));
+}
+
+// --- formulaire de programme ---
+function construireFormulaire() {
+  LETTRES.forEach((l, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'f-chip'; b.textContent = l; b.dataset.j = String(i + 1); b.setAttribute('aria-label', NOMS_JOURS[i]);
+    b.addEventListener('click', () => { const n = i + 1; formulaire.jours.has(n) ? formulaire.jours.delete(n) : formulaire.jours.add(n); majJours(); });
+    el('fJours').appendChild(b);
+  });
+  [['Semaine', '1,2,3,4,5'], ['Week-end', '6,7'], ['Tous', '1,2,3,4,5,6,7']].forEach(([nom, js]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'f-chip'; b.textContent = nom;
+    b.addEventListener('click', () => { formulaire.jours = new Set(js.split(',').map(Number)); majJours(); });
+    el('fRacc').appendChild(b);
+  });
+  el('fAction').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { formulaire.action = b.dataset.a; majAction(); }));
+  const fr = el('fReglages');
+  const titre = t => { const d = document.createElement('div'); d.className = 'f-sous'; d.textContent = t; return d; };
+  // Mode
+  fr.appendChild(titre('Mode au démarrage'));
+  const lm = document.createElement('div'); lm.className = 'f-chips'; lm.id = 'fModes';
+  [['', 'Inchangé'], ['MAN', 'MAN'], ['AUTO', 'AUTO'], ['ECO', 'ECO']].forEach(([v, n]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'f-chip'; b.textContent = n; b.dataset.m = v;
+    b.addEventListener('click', () => { formulaire.mode = v || null; majReglages(); });
+    lm.appendChild(b);
+  });
+  fr.appendChild(lm);
+  // Flamme (MAN)
+  const bf = document.createElement('div'); bf.id = 'fBlocFlamme'; bf.className = 'f-opt';
+  bf.appendChild(titre('Flamme'));
+  const cf = document.createElement('div'); cf.className = 'f-chips';
+  for (let n = 1; n <= 5; n++) {
+    const g = document.createElement('button'); g.type = 'button'; g.className = 'f-chip'; g.textContent = String(n); g.dataset.v = String(n);
+    g.addEventListener('click', () => { formulaire.flamme = n; majReglages(); });
+    cf.appendChild(g);
+  }
+  bf.appendChild(cf); fr.appendChild(bf);
+  // Consigne (AUTO, ECO)
+  const bc = document.createElement('div'); bc.id = 'fBlocCons'; bc.className = 'f-opt';
+  bc.appendChild(titre('Consigne'));
+  const sc = document.createElement('div'); sc.className = 'f-pas';
+  const mo = document.createElement('button'); mo.type = 'button'; mo.className = 'f-chip'; mo.textContent = '−'; mo.setAttribute('aria-label', 'Moins');
+  const va = document.createElement('b'); va.id = 'fConsVal';
+  const pl = document.createElement('button'); pl.type = 'button'; pl.className = 'f-chip'; pl.textContent = '+'; pl.setAttribute('aria-label', 'Plus');
+  mo.addEventListener('click', () => { formulaire.consigne = Math.max(5, formulaire.consigne - 1); majReglages(); });
+  pl.addEventListener('click', () => { formulaire.consigne = Math.min(30, formulaire.consigne + 1); majReglages(); });
+  sc.append(mo, va, pl); bc.appendChild(sc); fr.appendChild(bc);
+  // Ventilos : une ligne par ventilateur
+  fr.appendChild(titre('Ventilateurs'));
+  const lv = document.createElement('div'); lv.className = 'f-vents';
+  [1, 2, 3].forEach(n => {
+    const l = document.createElement('label'); const t = document.createElement('span'); t.textContent = 'V' + n;
+    const sel = document.createElement('select'); sel.className = 'f-sel'; sel.id = 'fVent' + n; sel.setAttribute('aria-label', 'Ventilateur ' + n);
+    [['', 'Inchangé'], ['0', '0'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'], ['6', 'Auto']].forEach(([v, nom]) => { const o = document.createElement('option'); o.value = v; o.textContent = nom; sel.appendChild(o); });
+    l.append(t, sel); lv.appendChild(l);
+  });
+  fr.appendChild(lv);
+  el('fAjout').addEventListener('click', () => ouvrirFormulaire(null));
+  el('fAnnuler').addEventListener('click', () => { el('fForm').hidden = true; f_msg(''); });
+  el('fValider').addEventListener('click', enregistrerProgramme);
+}
+function majReglages() {
+  el('fModes').querySelectorAll('.f-chip').forEach(b => b.classList.toggle('on', (b.dataset.m || null) === formulaire.mode));
+  el('fBlocFlamme').style.display = formulaire.mode === 'MAN' ? 'grid' : 'none';
+  el('fBlocCons').style.display = (formulaire.mode === 'AUTO' || formulaire.mode === 'ECO') ? 'grid' : 'none';
+  el('fBlocFlamme').querySelectorAll('.f-chip').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === formulaire.flamme));
+  el('fConsVal').textContent = formulaire.consigne + ' °C';
+}
+function majJours() { el('fJours').querySelectorAll('.f-chip').forEach(b => b.classList.toggle('on', formulaire.jours.has(Number(b.dataset.j)))); }
+function majAction() {
+  el('fAction').querySelectorAll('button').forEach(b => b.classList.toggle('actif', b.dataset.a === formulaire.action));
+  el('fReglages').style.display = formulaire.action === 'on' ? 'grid' : 'none';
+  majReglages();
+}
+function ouvrirFormulaire(p) {
+  formulaire.id = p ? p.id : 0;
+  formulaire.jours = new Set(p ? p.jours : [1, 2, 3, 4, 5]);
+  formulaire.action = p ? p.action : 'on';
+  el('fHeure').value = p ? p.heure : '07:00';
+  el('fFormTitre').textContent = p ? 'Modifier le programme' : 'Nouveau programme';
+  formulaire.mode = p ? (p.mode || null) : null;
+  formulaire.flamme = (p && p.flamme) ? p.flamme : (courant('flamme') || 2);
+  formulaire.consigne = (p && p.consigne) ? p.consigne : Math.min(30, Math.max(5, Math.round(consigne)));
+  [1, 2, 3].forEach(n => { const v = p ? p['vent' + n] : courant('vent' + n); el('fVent' + n).value = (v === null || v === undefined) ? '' : String(v); });
+  majJours(); majAction(); f_msg('');
+  el('fForm').hidden = false; el('fForm').scrollIntoView({ block: 'nearest' });
+}
+async function enregistrerProgramme() {
+  if (!formulaire.jours.size) { f_msg('Choisis au moins un jour.'); return; }
+  const heure = el('fHeure').value;
+  if (!/^\d{2}:\d{2}$/.test(heure)) { f_msg('Choisis une heure.'); return; }
+  const corps = { id: formulaire.id, jours: [...formulaire.jours].sort((a, b) => a - b), heure, action: formulaire.action, actif: true };
+  const on = formulaire.action === 'on';
+  corps.mode = on ? formulaire.mode : null;
+  corps.flamme = (on && formulaire.mode === 'MAN') ? formulaire.flamme : null;
+  corps.consigne = (on && (formulaire.mode === 'AUTO' || formulaire.mode === 'ECO')) ? formulaire.consigne : null;
+  [1, 2, 3].forEach(n => { const v = el('fVent' + n).value; corps['vent' + n] = (on && v !== '') ? Number(v) : null; });
+  if (formulaire.id) { const ex = etat && etat.programmes.find(x => x.id === formulaire.id); if (ex) corps.actif = ex.actif; }
+  try { await appelApi('programme_enregistrer', corps); el('fForm').hidden = true; f_msg('Programme enregistré.'); signature = ''; charger(); }
+  catch (e) { f_msg('Erreur : programme non enregistré.'); }
+}
+construireFormulaire();
+
+charger();
+setInterval(charger, 2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#e8662a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Poêle">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Apprentissage du poêle</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --fond: #f4efe9; --carte: #ffffff; --texte: #2a211b; --doux: #7a6c61; --ligne: #e6ddd3;
+    --accent: #e8662a; --accent-texte: #ffffff; --ok: #2e9e5b; --alerte: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+      --accent: #f07a3a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+    --accent: #f07a3a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 16px 16px 96px; display: grid; gap: 14px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--doux); margin: 0 0 12px; }
+  a.retour { color: var(--doux); text-decoration: none; border: 1px solid var(--ligne); background: var(--carte);
+    padding: 6px 12px; border-radius: 99px; font-size: .9rem; }
+  .liste { margin: 0 0 8px; padding-left: 20px; } .liste li { margin: 4px 0; }
+  h3 { font-size: 1rem; margin: 14px 0 6px; }
+  .tests { display: grid; gap: 10px; }
+  .test { border: 2px solid var(--ligne); border-radius: 14px; padding: 12px; }
+  .test h4 { margin: 0 0 4px; font-size: 1.05rem; }
+  .test p { margin: 0 0 6px; font-size: .92rem; }
+  .test .meta { color: var(--doux); font-size: .85rem; }
+  .test .btn { width: 100%; margin-top: 6px; }
+  .pilote { border: 2px solid var(--accent); }
+  .etapeN { color: var(--doux); font-weight: 700; margin: 0 0 4px; }
+  .etapeT { font-size: 1.15rem; font-weight: 600; margin: 0 0 12px; }
+  .compte { font-size: 2rem; font-weight: 800; text-align: center; margin: 4px 0; }
+  .lien { background: none; border: 0; color: var(--doux); text-decoration: underline; font: inherit; padding: 12px; width: 100%; cursor: pointer; }
+  .obs .btn { min-height: 48px; }
+  .rappel { background: var(--accent); color: var(--accent-texte); padding: 10px 12px; border-radius: 12px; font-weight: 700; margin: 0 0 10px; }
+  .btn.ok { border-color: var(--ok); color: var(--ok); }
+  .btn.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+  .rapide { display: flex; flex-wrap: wrap; gap: 8px; }
+  .carte { background: var(--carte); border-radius: 18px; padding: 16px; border: 1px solid var(--ligne); }
+  .note { color: var(--doux); font-size: .92rem; margin: 0 0 10px; }
+  .etat { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
+  .pt { width: 12px; height: 12px; border-radius: 50%; background: var(--doux); }
+  .actif .pt { background: var(--alerte); animation: clignote 1.2s ease-in-out infinite; }
+  @keyframes clignote { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .actif .pt { animation: none; } }
+  .consigne { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0 4px; }
+  .consigne output { font-size: 2.4rem; font-weight: 800; min-width: 5.5ch; text-align: center; }
+  .rond { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--ligne); background: transparent;
+    color: var(--texte); font-size: 1.7rem; font-weight: 700; cursor: pointer; }
+  .btn { min-height: 52px; border-radius: 14px; border: 2px solid var(--ligne); background: transparent; color: var(--texte);
+    font: inherit; font-weight: 700; padding: 0 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none; }
+  .btn.plein { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+  .btn.danger { color: var(--alerte); border-color: var(--alerte); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn:focus-visible, .rond:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .grand { width: 100%; min-height: 64px; font-size: 1.15rem; }
+  .grille { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .val { background: var(--fond); border-radius: 12px; padding: 10px 12px; }
+  .val span { display: block; color: var(--doux); font-size: .8rem; }
+  .val strong { font-size: 1.3rem; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--ligne); }
+  th { color: var(--doux); font-weight: 600; }
+  .msg { min-height: 1.4em; font-size: .92rem; color: var(--alerte); }
+  .menu { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 4px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: var(--carte); border-top: 1px solid var(--ligne); }
+  .menu a { flex: 1; max-width: 200px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
+    color: var(--doux); text-decoration: none; font-size: .72rem; font-weight: 600; }
+  .menu a svg { width: 24px; height: 24px; }
+  .menu a[aria-current="page"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .menu a:focus-visible { outline: 3px solid var(--accent); }
+</style>
+<script src="theme.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Apprentissage</h1>
+  </header>
+
+  <section class="carte">
+    <h2>Comment ça marche</h2>
+    <p>On observe le poêle pour comprendre comment il règle sa flamme. Tu fais les réglages sur la <strong>vraie télécommande</strong> (pas sur la page Poêle). Cette page <strong>note tout toute seule</strong> : pas besoin de feuille.</p>
+    <ol class="liste">
+      <li>Choisis un test ci-dessous.</li>
+      <li>Appuie sur « Commencer ». La page te dit quoi faire, étape par étape, et combien de temps attendre.</li>
+      <li>À chaque étape, fais le réglage sur la vraie télécommande, puis appuie sur « C'est fait ».</li>
+    </ol>
+    <h3>Avant tout test</h3>
+    <ul class="liste">
+      <li>Poêle allumé depuis <strong>au moins 20 minutes</strong>, en AUTO, flamme stable (le démarrage est fini).</li>
+      <li>Fenêtres fermées, pas de porte ouverte sur une autre pièce.</li>
+      <li>Ne touche pas à la page Poêle pendant le test.</li>
+      <li><strong>Consigne sérieuse</strong> : si la consigne est trop proche de la température de la pièce, la flamme reste au minimum et le test ne montre rien. La page te donne la bonne valeur pour chaque test (température de la pièce + 2 ou + 3 °C).</li>
+      <li>Respecte les temps d'attente : la pièce met du temps à réagir. Moins de 10 minutes entre deux changements, ça ne se voit pas.</li>
+    </ul>
+  </section>
+
+  <section class="carte" id="blocChoix">
+    <h2>Choisis un test</h2>
+    <p class="note" id="noteTemp"></p>
+    <div id="listeTests" class="tests"></div>
+  </section>
+
+  <section class="carte pilote" id="blocPilote" hidden>
+    <h2 id="piloteTitre">Test en cours</h2>
+    <p class="etapeN" id="etapeN"></p>
+    <p class="etapeT" id="etapeT"></p>
+    <div id="etapeChoix" class="rapide" hidden></div>
+    <button class="btn plein grand" id="bFait" type="button">C'est fait</button>
+    <div id="attente" hidden>
+      <p class="compte" id="compte"></p>
+      <p class="note" id="ensuite"></p>
+      <button class="btn plein grand" id="bSuite" type="button" disabled>Étape suivante</button>
+      <button class="lien" id="bPasser" type="button">Passer l'attente</button>
+    </div>
+    <button class="btn danger" id="bAbandon" type="button" style="width:100%;margin-top:10px">Abandonner ce test</button>
+    <p class="msg" id="msg" role="alert"></p>
+  </section>
+
+  <section class="carte obs" id="blocNote" hidden>
+    <h2>Ce que je vois sur le poêle</h2>
+    <p class="note">Un appui = c'est noté avec l'heure et la température. Appuie dès que tu vois un changement, et aussi <strong>toutes les 10 minutes</strong> (flamme vue + température affichée).</p>
+    <p class="rappel" id="rappel" hidden></p>
+    <h3>Taille de la flamme que je vois maintenant</h3>
+    <div class="rapide" id="obsFlamme">
+      <button class="btn" type="button" data-t="Flamme vue : éteinte">Éteinte</button>
+      <button class="btn" type="button" data-t="Flamme vue : 1 (très petite)">1 petite</button>
+      <button class="btn" type="button" data-t="Flamme vue : 2">2</button>
+      <button class="btn" type="button" data-t="Flamme vue : 3 (moyenne)">3 moyenne</button>
+      <button class="btn" type="button" data-t="Flamme vue : 4">4</button>
+      <button class="btn" type="button" data-t="Flamme vue : 5 (très grande)">5 grande</button>
+    </div>
+    <h3>Je vois un changement</h3>
+    <div class="rapide" id="obsEvt">
+      <button class="btn" type="button" data-t="La flamme baisse">Flamme baisse</button>
+      <button class="btn" type="button" data-t="La flamme monte">Flamme monte</button>
+      <button class="btn" type="button" data-t="Un ventilo démarre">Ventilo démarre</button>
+      <button class="btn" type="button" data-t="Un ventilo s'arrête">Ventilo s'arrête</button>
+      <button class="btn" type="button" data-t="Ventilo : léger">Ventilo léger</button>
+      <button class="btn" type="button" data-t="Ventilo : fort">Ventilo fort</button>
+      <button class="btn" type="button" data-t="Le poêle s'est mis en veille">Poêle en veille</button>
+      <button class="btn" type="button" data-t="Le poêle redémarre">Poêle redémarre</button>
+    </div>
+    <h3>La vraie télécommande affiche (température)</h3>
+    <div class="rapide" id="obsTemp"></div>
+    <h3>Autre chose</h3>
+    <div class="rapide" id="rapide">
+      <button class="btn" type="button" data-t="Fenêtre ouverte">Fenêtre ouverte</button>
+      <button class="btn" type="button" data-t="Fenêtre fermée">Fenêtre fermée</button>
+      <button class="btn" type="button" data-t="Porte ouverte">Porte ouverte</button>
+    </div>
+    <input id="note" type="text" maxlength="200" placeholder="Ex : j'ai rajouté des granulés" aria-label="Note" style="width:100%;padding:12px;border-radius:12px;border:2px solid var(--ligne);background:var(--carte);color:var(--texte);font:inherit;margin:8px 0">
+    <button class="btn plein" id="bNote" type="button" style="width:100%">Noter</button>
+  </section>
+
+  <section class="carte">
+    <h2>Consigne réglée sur la télécommande</h2>
+    <p class="note">Doit être la même que sur la vraie télécommande. Elle change toute seule pendant les tests de consigne.</p>
+    <div class="consigne">
+      <button class="rond" id="moins" type="button" aria-label="Baisser de 1 degré">−</button>
+      <output id="cons" aria-live="polite">– °C</output>
+      <button class="rond" id="plus" type="button" aria-label="Monter de 1 degré">+</button>
+    </div>
+    <button class="btn" id="enregCons" type="button" style="width:100%">Enregistrer cette consigne</button>
+  </section>
+
+  <section class="carte">
+    <h2>Enregistrement</h2>
+    <div class="etat" id="etat"><span class="pt"></span><span id="texteEtat">Arrêté</span></div>
+    <p class="note" id="duree"></p>
+    <button class="btn danger grand" id="bArreter" type="button" hidden>Arrêter l'enregistrement</button>
+  </section>
+
+  <section class="carte">
+    <h2>En direct</h2>
+    <div class="grille">
+      <div class="val"><span>Température pièce</span><strong id="vTemp">–</strong></div>
+      <div class="val"><span>Humidité</span><strong id="vHum">–</strong></div>
+      <div class="val"><span>Flamme</span><strong id="vFlamme">–</strong></div>
+      <div class="val"><span>Mode</span><strong id="vMode">–</strong></div>
+      <div class="val"><span>Ventilos</span><strong id="vVent">–</strong></div>
+      <div class="val"><span>Points notés</span><strong id="vNb">0</strong></div>
+    </div>
+  </section>
+
+  <section class="carte">
+    <h2>Derniers points</h2>
+    <table>
+      <thead><tr><th>Heure</th><th>Type</th><th>Flamme</th><th>Temp.</th><th>Consigne</th></tr></thead>
+      <tbody id="liste"></tbody>
+    </table>
+  </section>
+
+  <section class="carte">
+    <h2>Données</h2>
+    <div class="actions">
+      <a class="btn" id="bTelecharger" href="apprentissage_api.php?action=export">Télécharger (CSV)</a>
+      <button class="btn danger" id="bEffacer" type="button">Tout effacer</button>
+    </div>
+  </section>
+</main>
+
+<nav class="menu" aria-label="Navigation">
+  <a href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.2 1.4 1 2.2 1.8 2.2C10.3 8 11 5.5 12 3z"/></svg>
+    Poêle</a>
+  <a href="aide.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7"/><path d="M12 17h.01"/></svg>
+    Aide</a>
+  <a href="reglages.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Réglages</a>
+</nav>
+
+<script>
+const el = id => document.getElementById(id);
+let derniereNote = Date.now();
+let cons = null, actif = false, consigneChargee = false, tempPiece = null, test = null, choixFait = null;
+const CLE = 'appr-test';
+
+const TESTS = [
+  { id: 'eco', titre: 'ECO', delta: 2, duree: 'de 1 h 30 à 2 h',
+    apprend: 'Le signal radio du mode ECO, et quand le poêle s\'arrête puis se rallume tout seul.',
+    etapes: [
+      { t: 'PRÉPARATION. Remets les 2 piles dans la vraie télécommande. Pose-la à l\'endroit frais de la pièce, à environ 2 m du poêle (là où elle lit la température habituelle). Poêle allumé, en mode AUTO. Attends 2 minutes, puis lis la température affichée sur la télécommande : c\'est ta température de départ (note-la, par exemple 19).', note: 'ECO : départ, piles remises, télécommande à l\'endroit frais', attente: 5 },
+      { t: 'ACTIVE ECO. Sur la télécommande, garde le doigt 5 secondes sur la touche B (MODE) : l\'écran doit montrer ECO (TIMER ECO). Puis règle la consigne avec les flèches C : mets-la à ta température de départ + 1 (exemple : départ 19, consigne 20). Le poêle doit alors chauffer.', note: 'ECO activé, consigne = départ + 1', attente: 3 },
+      { t: 'FAIS MONTER LA TEMPÉRATURE. Prends la télécommande et rapproche-la du feu (côté chaud, jamais collée au poêle). Surveille son écran : dès qu\'il affiche la température de la consigne (exemple : 20), ne bouge plus. Appuie alors sur « C\'est fait » : l\'app te fait attendre 25 minutes. Garde la télécommande là, au chaud, et ne touche à aucune touche pendant ce temps.', note: 'ECO : télécommande au chaud, consigne atteinte', attente: 25 },
+      { t: 'LE POÊLE S\'EST-IL ARRÊTÉ ? Regarde le poêle : s\'est-il éteint tout seul (veille) ? Dans le journal, note l\'heure de l\'arrêt. Que ce soit oui ou non, appuie sur « C\'est fait ».', note: 'ECO : état du poêle vérifié après 25 min au chaud', attente: 1 },
+      { t: 'FAIS BAISSER LA TEMPÉRATURE. Repose la télécommande à l\'endroit frais de la pièce (là où elle était au départ). Ne touche à aucune touche. Appuie sur « C\'est fait » : l\'app te fait attendre 30 minutes. Surveille l\'écran de la télécommande : il doit afficher environ 2 °C de moins que la consigne (exemple : consigne 20, il doit afficher 18). Si le poêle ne se rallume pas, c\'est aussi une information.', note: 'ECO : télécommande remise au frais, attente rallumage', attente: 30 },
+      { t: 'LE POÊLE S\'EST-IL RALLUMÉ ? Regarde le poêle : est-il reparti (flamme, ventilos) ? Note l\'heure. Que ce soit oui ou non, appuie sur « C\'est fait ».', note: 'ECO : état du poêle vérifié après le refroidissement', attente: 1 },
+      { t: 'FIN. Sur la télécommande, garde le doigt 5 secondes sur la touche B (MODE) pour sortir d\'ECO. Remets le poêle en AUTO avec la consigne habituelle. IMPORTANT : retire ensuite les 2 piles de la télécommande, sinon le thermostat de l\'ESP32 reste en pause.', note: 'ECO désactivé, piles à retirer', attente: 1 }
+    ] }
+];
+
+async function post(action, donnees) {
+  const rep = await fetch('apprentissage_api.php?action=' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'poele' },
+    body: JSON.stringify(donnees || {})
+  });
+  let data = {};
+  try { data = await rep.json(); } catch (e) {}
+  if (action === 'note' && rep.ok) derniereNote = Date.now();
+  return { ok: rep.ok, data };
+}
+function message(t) { el('msg').textContent = t || ''; }
+function fmt(v, u) { return v === null || v === undefined ? '–' : String(v).replace('.', ',') + (u || ''); }
+function duree(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? h + ' h ' + String(m).padStart(2, '0') + ' min' : m + ' min';
+}
+function majCons() { el('cons').textContent = cons === null ? '– °C' : fmt(cons) + ' °C'; }
+function sauveTest() { try { if (test) localStorage.setItem(CLE, JSON.stringify(test)); else localStorage.removeItem(CLE); } catch (e) {} }
+function chargeTest() { try { const v = localStorage.getItem(CLE); test = v ? JSON.parse(v) : null; } catch (e) { test = null; }
+  if (test && !TESTS.some(t => t.id === test.id)) { test = null; try { localStorage.removeItem(CLE); } catch (e) {} } }
+const defTest = id => TESTS.find(t => t.id === id);
+const sub = (txt, c, x) => txt.replace(/\{C\}/g, fmt(c)).replace(/\{X\}/g, x || '');
+function conseillee(t) { return tempPiece === null ? null : Math.round(tempPiece) + t.delta; }
+
+function dessineTests() {
+  const box = el('listeTests'); box.textContent = '';
+  el('noteTemp').textContent = tempPiece === null
+    ? 'La température de la pièce n\'est pas disponible : la consigne conseillée apparaîtra dès qu\'elle arrive.'
+    : 'Température de la pièce maintenant : ' + fmt(tempPiece, ' °C') + '.';
+  TESTS.forEach(t => {
+    const d = document.createElement('div'); d.className = 'test';
+    const c = conseillee(t);
+    const add = (tag, txt, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = txt; d.appendChild(e); };
+    add('h4', t.titre);
+    add('p', 'On apprend : ' + t.apprend);
+    add('p', 'Consigne conseillée : ' + (c === null ? 'température de la pièce + ' + t.delta + ' °C' : c + ' °C') + ' · Durée : ' + t.duree + ' · ' + t.etapes.length + ' étapes', 'meta');
+    const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = 'Commencer ce test';
+    b.addEventListener('click', () => commencer(t));
+    d.appendChild(b); box.appendChild(d);
+  });
+}
+
+async function commencer(t) {
+  if (test && !confirm('Un test est déjà en cours. L\'abandonner et en commencer un autre ?')) return;
+  const c = conseillee(t) !== null ? conseillee(t) : cons;
+  if (c === null) { alert('Température de la pièce inconnue : règle d\'abord la consigne plus bas.'); return; }
+  cons = c; consigneChargee = true; majCons();
+  const r = await post('consigne', { valeur: c });
+  if (!r.ok) { alert(r.data.erreur || 'Erreur.'); return; }
+  if (!actif) { const d = await post('demarrer'); if (!d.ok) { alert(d.data.erreur || 'Erreur.'); return; } }
+  await post('note', { texte: 'TEST : ' + t.titre + ' (consigne ' + fmt(c) + ')' });
+  test = { id: t.id, i: 0, phase: 'faire', fin: 0, c };
+  sauveTest(); choixFait = null; dessinePilote(); charger();
+  el('blocPilote').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function dessinePilote() {
+  const box = el('blocPilote');
+  box.hidden = !test; el('blocChoix').hidden = !!test;
+  if (!test) return;
+  const t = defTest(test.id), e = t.etapes[test.i];
+  el('piloteTitre').textContent = 'Test : ' + t.titre;
+  el('etapeN').textContent = 'Étape ' + (test.i + 1) + ' sur ' + t.etapes.length;
+  el('etapeT').textContent = sub(e.t, test.c + (e.d || 0));
+  const faire = test.phase === 'faire';
+  el('etapeT').hidden = !faire; el('bFait').hidden = !faire; el('attente').hidden = faire;
+  const ch = el('etapeChoix'); ch.textContent = '';
+  ch.hidden = !(faire && e.choix);
+  if (faire && e.choix) e.choix.forEach(x => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (choixFait === x ? ' sel' : ''); b.textContent = x;
+    b.addEventListener('click', () => { choixFait = x; dessinePilote(); });
+    ch.appendChild(b);
+  });
+  el('bFait').disabled = !!(e.choix && !choixFait);
+  el('bFait').textContent = e.choix && !choixFait ? 'Choisis d\'abord la sortie' : 'C\'est fait';
+  if (!faire) {
+    const dernier = test.i === t.etapes.length - 1;
+    const n = dernier ? null : t.etapes[test.i + 1];
+    el('ensuite').textContent = dernier ? 'Dernière étape faite. Après l\'attente, termine le test.' : 'Ensuite : ' + sub(n.t, test.c + (n.d || 0));
+    el('bSuite').textContent = dernier ? 'Terminer le test' : 'Étape suivante';
+    majCompte();
+  }
+}
+function majCompte() {
+  if (!test || test.phase !== 'attendre') return;
+  const reste = Math.max(0, Math.round((test.fin - Date.now()) / 1000));
+  el('compte').textContent = reste > 0 ? 'Attends encore ' + Math.floor(reste / 60) + ' min ' + String(reste % 60).padStart(2, '0') + ' s' : 'Tu peux passer à la suite';
+  el('bSuite').disabled = reste > 0;
+  el('bPasser').hidden = reste === 0;
+}
+setInterval(majCompte, 1000);
+
+el('bFait').addEventListener('click', async () => {
+  const t = defTest(test.id), e = t.etapes[test.i];
+  if (e.d) {
+    test.c = Math.min(30, Math.max(5, test.c + e.d)); cons = test.c; majCons();
+    await post('consigne', { valeur: test.c });
+  }
+  const r = await post('note', { texte: ('Étape ' + (test.i + 1) + ' : ' + sub(e.note, test.c, choixFait)).slice(0, 200) });
+  if (!r.ok) { message(r.data.erreur || 'Erreur.'); return; }
+  message(''); choixFait = null;
+  test.phase = 'attendre'; test.fin = Date.now() + e.attente * 60000;
+  sauveTest(); dessinePilote(); charger();
+});
+el('bSuite').addEventListener('click', async () => {
+  const t = defTest(test.id);
+  if (test.i === t.etapes.length - 1) {
+    await post('note', { texte: 'FIN DU TEST : ' + t.titre });
+    await post('arreter');
+    test = null; sauveTest(); dessinePilote(); charger();
+    alert('Test terminé et enregistré. Tu peux en faire un autre.');
+    return;
+  }
+  test.i++; test.phase = 'faire'; sauveTest(); dessinePilote();
+});
+el('bPasser').addEventListener('click', () => { test.fin = Date.now(); sauveTest(); majCompte(); });
+el('bAbandon').addEventListener('click', async () => {
+  if (!confirm('Abandonner ce test ? Ce qui est déjà noté est gardé.')) return;
+  await post('note', { texte: 'TEST ABANDONNÉ : ' + defTest(test.id).titre });
+  test = null; sauveTest(); dessinePilote(); charger();
+});
+
+async function charger() {
+  try {
+    const rep = await fetch('apprentissage_api.php?action=etat', { cache: 'no-store' });
+    const d = await rep.json();
+    actif = d.actif;
+    el('etat').classList.toggle('actif', actif);
+    el('texteEtat').textContent = actif ? 'Enregistrement en cours' : 'Arrêté';
+    el('duree').textContent = actif && d.debut ? 'Depuis ' + duree(d.maintenant - d.debut) + '. Tu peux fermer la page : le Pi continue.' : 'Il démarre tout seul quand tu commences un test.';
+    el('bArreter').hidden = !actif;
+    el('blocNote').hidden = !actif;
+    if (!consigneChargee && d.consigne !== null) { cons = d.consigne; consigneChargee = true; majCons(); }
+    const avant = tempPiece; tempPiece = d.temperature;
+    if (avant !== tempPiece && !test) dessineTests();
+    if (avant === null || Math.round(avant) !== Math.round(tempPiece === null ? -99 : tempPiece)) dessineObsTemp();
+    el('vTemp').textContent = fmt(d.temperature, ' °C');
+    el('vHum').textContent = d.humidite === null ? '–' : Math.round(d.humidite) + ' %';
+    el('vFlamme').textContent = (d.mode === 'AUTO' || d.mode === 'ECO') ? 'auto (non lue)' : (d.flamme === null ? '–' : d.flamme);
+    el('vMode').textContent = d.mode === 'inconnu' ? '–' : d.mode;
+    const f = v => v === null ? '–' : (v === 6 ? 'A' : v);
+    el('vVent').textContent = f(d.vent1) + ' / ' + f(d.vent2) + ' / ' + f(d.vent3);
+    el('vNb').textContent = d.nb;
+    const tb = el('liste'); tb.textContent = '';
+    d.derniers.forEach(l => {
+      const tr = document.createElement('tr');
+      const h = new Date(l.t * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      [h, l.type + (l.note ? ' : ' + l.note : ''), l.flamme === null ? '–' : l.flamme, fmt(l.temperature), fmt(l.consigne)].forEach(t => {
+        const td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  } catch (e) { /* on reessaie au prochain tour */ }
+}
+
+function pas(delta) {
+  cons = Math.min(30, Math.max(5, Math.round(cons === null ? 20 : cons) + delta));
+  consigneChargee = true; majCons();
+}
+el('moins').addEventListener('click', () => pas(-1));
+el('plus').addEventListener('click', () => pas(1));
+el('enregCons').addEventListener('click', async () => {
+  if (cons === null) { alert('Choisis d\'abord une consigne avec + ou −.'); return; }
+  const r = await post('consigne', { valeur: cons });
+  if (r.ok) { el('enregCons').textContent = 'Consigne enregistrée'; setTimeout(() => { el('enregCons').textContent = 'Enregistrer cette consigne'; }, 1500); }
+  charger();
+});
+async function noter(texte, bouton) {
+  const r = await post('note', { texte: texte.slice(0, 200) });
+  if (bouton) {
+    const avant = bouton.textContent;
+    bouton.textContent = r.ok ? 'Noté ✓' : 'Erreur';
+    bouton.classList.toggle('ok', r.ok);
+    setTimeout(() => { bouton.textContent = avant; bouton.classList.remove('ok'); }, 1200);
+  }
+  charger();
+  return r.ok;
+}
+el('blocNote').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]');
+  if (b) noter(b.dataset.t, b);
+});
+el('bNote').addEventListener('click', async () => {
+  const t = el('note').value.trim();
+  if (!t) return;
+  if (await noter(t, el('bNote'))) el('note').value = '';
+});
+function dessineObsTemp() {
+  const box = el('obsTemp'); box.textContent = '';
+  const centre = tempPiece === null ? 20 : Math.round(tempPiece);
+  [centre - 2, centre - 1, centre, centre + 1, centre + 2].forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
+    b.dataset.t = 'Télécommande affiche ' + v + ' °C'; b.textContent = v + ' °C';
+    box.appendChild(b);
+  });
+}
+setInterval(() => {
+  const r = el('rappel');
+  const min = Math.floor((Date.now() - derniereNote) / 60000);
+  r.hidden = !(actif && min >= 10);
+  if (!r.hidden) r.textContent = 'Ça fait ' + min + ' min sans rien noter : note la taille de la flamme et la température affichée.';
+}, 5000);
+el('bArreter').addEventListener('click', async () => {
+  await post('arreter');
+  test = null; sauveTest(); dessinePilote(); charger();
+});
+el('bEffacer').addEventListener('click', async () => {
+  if (!confirm('Effacer tous les points enregistrés ? C\'est définitif.')) return;
+  await post('effacer');
+  test = null; sauveTest(); dessinePilote();
+  charger();
+});
+
+chargeTest(); dessineTests(); dessinePilote(); dessineObsTemp();
+charger();
+setInterval(charger, 3000);
+</script>
+</body>
+</html>

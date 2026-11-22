@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fr" data-page="poele">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poêle MCZ</title>
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#e8662a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Poêle">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+  :root {
+    --fond: #f4efe9; --carte: #ffffff; --texte: #2a211b; --doux: #7a6c61; --ligne: #e6ddd3;
+    --accent: #e8662a; --accent2: #f59a3c; --accent-texte: #ffffff; --ok: #2e9e5b; --alerte: #c0392b;
+    --piste: #e6ddd3; --ombre: 0 2px 10px rgba(60, 35, 15, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+      --accent: #f07a3a; --accent2: #f5a64a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+      --piste: #3a2f27; --ombre: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fond: #15110e; --carte: #221b16; --texte: #f4ebe2; --doux: #a99a8d; --ligne: #3a2f27;
+    --accent: #f07a3a; --accent2: #f5a64a; --accent-texte: #1d120a; --ok: #4cc27c; --alerte: #ff7b6b;
+    --piste: #3a2f27; --ombre: none;
+  }
+  .theme { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte);
+    display: grid; place-items: center; padding: 0; }
+  .theme svg { width: 20px; height: 20px; }
+  .entete-droite { display: flex; align-items: center; gap: 8px; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 100px; display: grid; gap: 14px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  h1 { font-size: 1.35rem; margin: 0; }
+  h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--doux); margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px; }
+  h2 svg { width: 18px; height: 18px; }
+  .carte { background: var(--carte); border-radius: 18px; padding: 16px; box-shadow: var(--ombre); border: 1px solid var(--ligne); }
+  .pastille { display: inline-flex; align-items: center; gap: 7px; font-size: .85rem; color: var(--doux);
+    border: 1px solid var(--ligne); background: var(--carte); padding: 5px 11px; border-radius: 99px; }
+  .pastille.hors { border-color: var(--alerte); color: var(--alerte); font-weight: 700; animation: clignote 1s ease-in-out infinite; }
+  .pastille.hors .point { background: var(--alerte); }
+  @keyframes clignote { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .pastille.hors { animation: none; background: var(--alerte); color: #fff; } }
+  .point { width: 9px; height: 9px; border-radius: 50%; background: var(--alerte); }
+  .point.ok { background: var(--ok); }
+  .bandeau { background: var(--alerte); color: #fff; padding: 10px 14px; border-radius: 12px; font-size: .92rem; }
+  .bandeau[hidden] { display: none; }
+  .bandeau.secours { display: flex; flex-direction: column; gap: 10px; }
+  .bandeau.secours[hidden] { display: none; }
+  .bouton-secours { background: #fff; color: var(--alerte); font-weight: 700; padding: 12px 16px; border-radius: 10px; text-decoration: none; text-align: center; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* ----- Etat + marche/arret ----- */
+  .hero { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+  .rond { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: var(--piste); color: var(--doux); transition: .3s; }
+  .rond svg { width: 46px; height: 46px; }
+  .hero.allume .rond { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 55%, transparent); }
+  /* Couleur de l'icone selon le mode : MAN orange, AUTO bleu, ECO vert */
+  .hero.allume.mode-auto .rond { background: linear-gradient(135deg, #62b8ff, #2f6fe0); box-shadow: 0 0 28px rgba(47, 111, 224, .55); }
+  .hero.allume.mode-eco .rond { background: linear-gradient(135deg, #67d996, #2e9e5b); box-shadow: 0 0 28px rgba(46, 158, 91, .55); }
+  .badge-mode { display: inline-block; font-size: .8rem; font-weight: 700; padding: 2px 10px; border-radius: 99px; margin-left: 8px;
+    vertical-align: middle; background: var(--accent); color: var(--accent-texte); }
+  .hero.mode-auto .badge-mode { background: #2f6fe0; color: #fff; }
+  .hero.mode-eco .badge-mode { background: #2e9e5b; color: #fff; }
+  .gros-etat { font-size: 1.7rem; font-weight: 700; line-height: 1.1; }
+  .detail { color: var(--doux); font-size: .92rem; margin-top: 4px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; grid-column: 1 / -1; }
+  .btn { min-height: 52px; border-radius: 14px; border: 2px solid var(--ligne); background: transparent; font-weight: 700; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px; padding: 0 14px; }
+  .btn svg { width: 20px; height: 20px; }
+  .btn.plein { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+  .btn.petit { min-height: 40px; font-size: .9rem; border-radius: 12px; }
+  .btn:active { transform: scale(.98); }
+
+  /* ----- Temperature de la piece ----- */
+  .temp { display: grid; gap: 12px; }
+  .temp-haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .temp-bloc { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .temp-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex: none;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+  .temp-ico svg { width: 26px; height: 26px; }
+  .temp-val { font-size: 2.3rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+  .temp-val small { font-size: 1.1rem; font-weight: 600; color: var(--doux); margin-left: 2px; }
+  .temp-lib { color: var(--doux); font-size: .85rem; margin-top: 3px; }
+  .temp-cote { text-align: right; display: grid; gap: 6px; justify-items: end; }
+  .temp-hum { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+  .temp-hum svg { width: 18px; height: 18px; color: #2f6fe0; }
+  .temp-etat { font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--piste); color: var(--doux); }
+  .temp-etat.froid { background: rgba(47, 111, 224, .16); color: #2f6fe0; }
+  .temp-etat.bon { background: rgba(46, 158, 91, .16); color: var(--ok); }
+  .temp-etat.chaud { background: rgba(232, 102, 42, .16); color: var(--accent); }
+  .echelle { position: relative; height: 10px; border-radius: 99px; margin: 2px 6px 0;
+    background: linear-gradient(to right, #62b8ff 0%, #62b8ff 25%, #67d996 39%, #67d996 51%, #f5a64a 70%, #e8662a 100%); }
+  .marque { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 4px solid var(--texte);
+    transform: translate(-50%, -50%); box-shadow: 0 1px 5px rgba(0,0,0,.35); transition: left .6s ease; }
+  .echelle-lib { position: relative; height: 1.1em; color: var(--doux); font-size: .75rem; margin: -4px 6px 0; }
+  .echelle-lib span { position: absolute; top: 0; transform: translateX(-50%); }
+  .echelle-lib span:first-child { transform: none; }
+  .echelle-lib span:last-child { transform: translateX(-100%); }
+  .temp.hors-ligne { opacity: .6; }
+  .temp.hors-ligne .marque { display: none; }
+  @media (prefers-reduced-motion: reduce) { .marque { transition: none; } }
+
+  /* ----- Curseurs ----- */
+  .reglage { display: grid; gap: 6px; padding: 6px 0 14px; }
+  .reglage:last-child { padding-bottom: 0; }
+  .ligne-reglage { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .nom { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .nom svg { width: 22px; height: 22px; color: var(--accent); }
+  .valeur { font-weight: 700; font-size: 1.15rem; min-width: 3.2ch; text-align: right; }
+  .valeur small { font-weight: 500; color: var(--doux); font-size: .8rem; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; margin: 0; touch-action: pan-y; }
+  input[type=range]::-webkit-slider-runnable-track { height: 12px; border-radius: 99px;
+    background: linear-gradient(to right, var(--accent2), var(--accent) var(--p, 0%), var(--piste) var(--p, 0%)); }
+  input[type=range]::-moz-range-track { height: 12px; border-radius: 99px; background: var(--piste); }
+  input[type=range]::-moz-range-progress { height: 12px; border-radius: 99px; background: linear-gradient(to right, var(--accent2), var(--accent)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; margin-top: -9px;
+    background: #fff; border: 4px solid var(--accent); box-shadow: 0 1px 5px rgba(0,0,0,.3); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); }
+  input[type=range]:disabled { opacity: .45; }
+  .graduations { display: flex; justify-content: space-between; gap: 2px; }
+  .grad { flex: 1; min-height: 48px; border: 2px solid var(--ligne); border-radius: 12px; background: transparent; color: var(--doux); font-weight: 700; font-size: 1rem; padding: 0; }
+  .grad:active { background: var(--piste); }
+  .grad:disabled { cursor: not-allowed; }
+  .grad.actif { color: var(--accent-texte); background: var(--accent); border-color: var(--accent); }
+  .note { font-size: .85rem; color: var(--doux); margin: 8px 0 0; }
+  .en-attente { color: var(--accent); font-size: .8rem; font-weight: 600; }
+
+  /* ----- Minuteur ----- */
+  .segment { display: grid; grid-template-columns: 1fr 1fr; background: var(--piste); border-radius: 14px; padding: 4px; gap: 4px; }
+  .segment button { border: 0; background: transparent; border-radius: 10px; min-height: 42px; font-weight: 600; color: var(--doux); }
+  .segment button.actif { background: var(--carte); color: var(--texte); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .puces { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+  .puce { min-height: 44px; padding: 0 16px; border-radius: 99px; border: 2px solid var(--ligne); background: transparent; font-weight: 600; }
+  .puce:active { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); }
+  .perso { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+  .perso input { width: 90px; min-height: 44px; border-radius: 12px; border: 2px solid var(--ligne); background: transparent; color: inherit; font: inherit; padding: 0 10px; }
+  .liste { display: grid; gap: 8px; margin-top: 14px; }
+  .item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--fond); border-radius: 14px; padding: 10px 12px; }
+  .item .gros { font-weight: 700; }
+  .item small { color: var(--doux); display: block; }
+  .vide { color: var(--doux); font-size: .9rem; }
+
+  /* ----- Programmation ----- */
+  .prog { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; background: var(--fond); border-radius: 14px; padding: 12px; }
+  .prog.inactif { opacity: .55; }
+  .heure { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+  .heure span { font-size: .85rem; font-weight: 600; color: var(--accent); margin-left: 8px; }
+  .jours { display: flex; gap: 4px; flex-wrap: wrap; }
+  .jour { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+    border: 2px solid var(--ligne); color: var(--doux); background: transparent; padding: 0; }
+  .jour.on { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+  .prog-actions { display: flex; gap: 2px; align-items: center; grid-row: 1; grid-column: 2; }
+  .prog .jours, .prog .resume { grid-column: 1 / -1; }
+  .icone-btn { width: 40px; height: 40px; border-radius: 12px; border: 0; background: transparent; color: var(--doux); display: grid; place-items: center; }
+  .icone-btn svg { width: 20px; height: 20px; }
+  .interrupteur { position: relative; width: 50px; height: 30px; border-radius: 99px; border: 0; background: var(--piste); padding: 0; flex: none; }
+  .interrupteur::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .interrupteur[aria-checked=true] { background: var(--ok); }
+  .interrupteur[aria-checked=true]::after { left: 23px; }
+  .resume { color: var(--doux); font-size: .85rem; grid-column: 1; }
+
+  dialog { border: 0; border-radius: 20px; padding: 0; width: min(92vw, 520px); background: var(--carte); color: var(--texte); box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  .form { padding: 18px; display: grid; gap: 14px; max-height: 88vh; overflow-y: auto; }
+  .form h3 { margin: 0; font-size: 1.2rem; }
+  .form label.titre { font-weight: 600; font-size: .9rem; color: var(--doux); display: block; margin-bottom: 6px; }
+  .form input[type=time] { min-height: 52px; font: inherit; font-size: 1.6rem; font-weight: 700; border-radius: 12px; border: 2px solid var(--ligne); background: transparent; color: inherit; padding: 0 12px; width: 100%; }
+  .raccourcis { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .raccourcis button { border: 0; background: var(--piste); border-radius: 99px; padding: 6px 12px; font-size: .85rem; font-weight: 600; }
+  .jours.grands .jour { width: 40px; height: 40px; font-size: .95rem; }
+  .opt { display: grid; gap: 4px; }
+  .opt .tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .opt .tete label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .opt .tete input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .opt.ferme .graduations { opacity: .45; }
+  .pied { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .erreur { color: var(--alerte); font-size: .9rem; min-height: 1.2em; }
+
+  details summary { cursor: pointer; color: var(--doux); font-weight: 600; font-size: .9rem; }
+  details ul { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+  details li { display: flex; justify-content: space-between; gap: 10px; font-size: .9rem; border-bottom: 1px solid var(--ligne); padding-bottom: 8px; }
+  details li small { color: var(--doux); display: block; }
+  .statut { font-size: .78rem; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--ligne); white-space: nowrap; height: fit-content; }
+  .statut.attente, .statut.envoi { border-color: var(--accent); color: var(--accent); }
+  .statut.echec { border-color: var(--alerte); color: var(--alerte); }
+  #message { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--texte); color: var(--fond);
+    padding: 10px 16px; border-radius: 12px; font-size: .95rem; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; z-index: 10; }
+  #message.visible { opacity: 1; }
+  .menu { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 4px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: var(--carte); border-top: 1px solid var(--ligne); }
+  .menu a { flex: 1; max-width: 200px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
+    color: var(--doux); text-decoration: none; font-size: .72rem; font-weight: 600; }
+  .menu a svg { width: 24px; height: 24px; }
+  .menu a[aria-current="page"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .menu a:focus-visible { outline: 3px solid var(--accent); }
+  html.verif main { visibility: hidden; }
+  .bascule { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--ligne); width: min(100%, 440px); }
+  .bascule button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--doux);
+    font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .bascule button.actif { background: var(--carte); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+  .bascule button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+<script src="mode.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Poêle MCZ</h1>
+    <div class="entete-droite">
+      <span class="pastille"><span class="point" id="pointEsp"></span><span id="texteEsp">ESP32 non connecté</span></span>
+    </div>
+  </header>
+
+  <div class="bandeau" id="bandeau" hidden>L'ESP32 n'est pas connecté : tes demandes attendent qu'il revienne.</div>
+  <div class="bandeau secours" id="bandeauSecours" hidden>
+    <span>Le Raspberry Pi ne répond pas. Tu peux piloter le poêle avec le mode secours (chez toi seulement).</span>
+    <a class="bouton-secours" href="http://192.168.1.50/">Ouvrir le mode secours</a>
+  </div>
+
+  <!-- État et marche / arrêt -->
+  <section class="carte hero" id="hero">
+    <div class="rond" id="rond"></div>
+    <div>
+      <div class="gros-etat" id="gEtat">Poêle</div>
+      <div class="detail" id="dEtat">En attente d'information</div>
+    </div>
+    <div class="duo">
+      <button class="btn plein" id="bAllumer" type="button"></button>
+      <button class="btn" id="bEteindre" type="button"></button>
+    </div>
+  </section>
+
+  <!-- Temperature de la piece -->
+  <section class="carte temp hors-ligne" id="carteTemp" aria-label="Température de la pièce">
+    <div class="temp-haut">
+      <div class="temp-bloc">
+        <div class="temp-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></svg>
+        </div>
+        <div>
+          <div class="temp-val" id="tVal">–<small>°C</small></div>
+          <div class="temp-lib" id="tLib">Température de la pièce</div>
+        </div>
+      </div>
+      <div class="temp-cote">
+        <span class="temp-hum" aria-label="Humidité">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg>
+          <span id="hVal">–</span>
+        </span>
+        <span class="temp-etat" id="tEtat">Capteur hors ligne</span>
+      </div>
+    </div>
+    <div class="echelle" aria-hidden="true"><div class="marque" id="tMarque" style="left:50%"></div></div>
+    <div class="echelle-lib" aria-hidden="true"><span style="left:0">5°</span><span style="left:42.86%">20°</span><span style="left:100%">40°</span></div>
+  </section>
+
+  <!-- Flamme -->
+  <section class="carte">
+    <h2 id="icFlamme"> Flamme</h2>
+    <div class="reglage" id="zFlamme"></div>
+    <p class="note" id="noteFlamme">Réglable en mode MAN. En AUTO et ECO, le poêle règle lui-même la puissance.</p>
+  </section>
+
+  <!-- Ventilateurs -->
+  <section class="carte">
+    <h2 id="icVent"> Ventilateurs</h2>
+    <div id="zVent"></div>
+  </section>
+
+  <!-- Minuteur -->
+  <section class="carte">
+    <h2 id="icMin"> Minuteur</h2>
+    <div class="segment" id="segMin" role="group" aria-label="Action du minuteur">
+      <button type="button" data-a="off" class="actif">Éteindre dans…</button>
+      <button type="button" data-a="on">Allumer dans…</button>
+    </div>
+    <div class="puces" id="pucesMin"></div>
+    <div class="perso">
+      <input id="minPerso" type="number" inputmode="numeric" min="1" max="1440" placeholder="min" aria-label="Durée en minutes">
+      <button class="btn petit" id="bMinPerso" type="button">Lancer</button>
+    </div>
+    <div class="liste" id="listeMin"></div>
+  </section>
+
+  <!-- Programmation -->
+  <section class="carte">
+    <h2 id="icProg"> Programmation</h2>
+    <div class="liste" id="listeProg" style="margin-top:0"></div>
+    <button class="btn plein" id="bAjoutProg" type="button" style="width:100%;margin-top:14px"></button>
+    <p class="note">Les programmes tournent tant que l'ESP32 est connecté. Un ordre manqué de plus de 2 minutes n'est pas rattrapé.</p>
+  </section>
+
+  <section class="carte">
+    <details>
+      <summary>Dernières demandes</summary>
+      <ul id="listeCmd"></ul>
+    </details>
+  </section>
+</main>
+
+<nav class="menu" aria-label="Navigation">
+  <a href="index.html" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.2 1.4 1 2.2 1.8 2.2C10.3 8 11 5.5 12 3z"/></svg>
+    Poêle</a>
+  <a href="aide.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7"/><path d="M12 17h.01"/></svg>
+    Aide</a>
+  <a href="reglages.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Réglages</a>
+</nav>
+
+<dialog id="dlg">
+  <form class="form" id="form" method="dialog">
+    <h3 id="dlgTitre">Nouveau programme</h3>
+    <div>
+      <label class="titre">Jours</label>
+      <div class="jours grands" id="fJours"></div>
+      <div class="raccourcis">
+        <button type="button" data-j="1,2,3,4,5">Semaine</button>
+        <button type="button" data-j="6,7">Week-end</button>
+        <button type="button" data-j="1,2,3,4,5,6,7">Tous</button>
+      </div>
+    </div>
+    <div>
+      <label class="titre" for="fHeure">Heure</label>
+      <input type="time" id="fHeure" value="07:00" required>
+    </div>
+    <div>
+      <label class="titre">Action</label>
+      <div class="segment" id="fAction">
+        <button type="button" data-a="on" class="actif">Allumer</button>
+        <button type="button" data-a="off">Éteindre</button>
+      </div>
+    </div>
+    <div id="fReglages" style="display:grid;gap:10px">
+      <label class="titre" style="margin:0">Réglages à l'allumage (facultatif)</label>
+      <div id="fSliders"></div>
+    </div>
+    <div class="erreur" id="fErreur" role="alert"></div>
+    <div class="pied">
+      <button class="btn" type="button" id="fAnnuler">Annuler</button>
+      <button class="btn plein" type="button" id="fValider">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+<div id="message" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const ICONES = {
+  flamme: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 2c.4 3-1.3 4.6-2.8 6.2C8.2 9.8 7 11.4 7 13.7 7 17 9.2 19 12 19s5-2 5-5.2c0-1.6-.6-2.9-1.4-4-.3 1.3-1 2.1-1.8 2.4.5-3.3-.2-6.6-1.3-10.2zM12 22c-4 0-7-2.8-7-7.2 0-2.7 1.3-4.6 2.6-6.1C9 7 10 6 10.4 4c-3.6 2.2-7.4 6.6-7.4 11.2C3 20.1 7 24 12 24s9-3.900 9-8.800c0-1.500-.4-2.800-1-4 0 0 .8 8.800-8 10.800z" opacity="0"/></svg>',
+  vent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.800"/><path d="M12 10.200C12 6 10 3 7 3c-1.500 0-2.500 1-2.500 2.500C4.500 8 8 10 10.200 11"/><path d="M13.800 12c4.200 0 7.200-2 7.200-5 0-1.500-1-2.500-2.500-2.500C16 4.500 14 8 13 10.200"/><path d="M12 13.800c0 4.200 2 7.200 5 7.200 1.500 0 2.500-1 2.500-2.500C19.500 16 16 14 13.800 13"/><path d="M10.200 12c-4.200 0-7.200 2-7.200 5 0 1.500 1 2.500 2.500 2.500C8 19.500 10 16 11 13.800"/></svg>',
+  horloge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.500 2M9 2h6"/></svg>',
+  calendrier: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  marche: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.500 6.500a8 8 0 1 0 11 0"/></svg>',
+  corbeille: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  crayon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
+};
+// Vraie flamme (trace simple et lisible)
+ICONES.flamme = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2s1 3.500-1.500 6C8 10.500 6 12.500 6 16a6 6 0 0 0 12 0c0-2-.9-3.700-2-5 0 1.500-.8 2.800-2 3 .6-3-.1-8.500-2-12zm0 19a3 3 0 0 1-3-3c0-1.500 1-2.500 2-3.500.3 1.200 1 1.900 2 2 .6.600 1 1.500 1 2.500a3 3 0 0 1-2 2z" fill-rule="evenodd"/></svg>';
+
+const NOMS = { marche: 'Marche / arrêt', flamme: 'Flamme', vent1: 'Ventilateur 1', vent2: 'Ventilateur 2', vent3: 'Ventilateur 3' };
+const STATUTS = { attente: 'en attente', envoi: 'en cours', remplacee: 'remplacée', annulee: 'annulée', envoyee: 'envoyée', echec: 'échec', ignoree: 'ignorée' };
+const LETTRES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const NOMS_JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+let etat = null;
+const el = id => document.getElementById(id);
+const derniereAction = {};     // type -> date du dernier geste de l'utilisateur
+
+function montrer(texte) {
+  const m = el('message');
+  m.textContent = texte;
+  m.classList.add('visible');
+  clearTimeout(montrer.t);
+  montrer.t = setTimeout(() => m.classList.remove('visible'), 2600);
+}
+
+async function appel(action, donnees) {
+  const rep = await fetch('api.php?action=' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'poele' },
+    body: JSON.stringify(donnees || {})
+  });
+  if (!rep.ok) throw new Error('refusé');
+  return rep.json();
+}
+
+async function commande(type, valeur) {
+  derniereAction[type] = Date.now();
+  try {
+    await appel('commande', { type, valeur });
+    montrer('Demande envoyée : ' + NOMS[type]);
+    charger();
+  } catch (e) { montrer('Erreur : la demande n\'a pas été enregistrée.'); }
+}
+
+// ---------- Curseur ----------
+function creerCurseur(conteneur, opt) {
+  const bloc = document.createElement('div');
+  bloc.className = 'reglage';
+  const ligne = document.createElement('div');
+  ligne.className = 'ligne-reglage';
+  const nom = document.createElement('div');
+  nom.className = 'nom';
+  if (opt.icone) { const s = document.createElement('span'); s.innerHTML = opt.icone; nom.appendChild(s.firstChild); }
+  const t = document.createElement('span'); t.textContent = opt.nom; nom.appendChild(t);
+  const val = document.createElement('div');
+  val.className = 'valeur';
+  ligne.append(nom);          // plus de chiffre seul a droite : le bouton actif suffit
+  const r = { value: String(opt.min), disabled: false };   // valeur courante (plus de curseur : boutons seulement)
+  const grad = document.createElement('div');
+  grad.className = 'graduations';
+  const boutons = [];
+  for (let i = opt.min; i <= opt.max; i++) {
+    const g = document.createElement('button');
+    g.type = 'button'; g.className = 'grad'; g.dataset.v = String(i);
+    g.textContent = opt.libelle ? opt.libelle(i, true) : String(i);
+    g.setAttribute('aria-label', opt.nom + ' : ' + (opt.libelle ? opt.libelle(i, true) : i));
+    grad.appendChild(g); boutons.push(g);
+  }
+  bloc.append(ligne, grad);
+  conteneur.appendChild(bloc);
+
+  const c = { bloc, r, val, boutons, tient: false, attente: null };
+  const maj = () => {
+    const v = Number(r.value);
+    boutons.forEach(b => b.classList.toggle('actif', Number(b.dataset.v) === v));
+    val.textContent = opt.libelle ? opt.libelle(v, false) : String(v);
+  };
+  c.maj = maj;
+  c.mettre = (v, attente) => {
+    c.attente = attente;
+    if (c.tient || (opt.type && Date.now() - (derniereAction[opt.type] || 0) < 6000)) return;
+    if (v !== null && v !== undefined) r.value = v;
+    c.envoye = Number(r.value);
+    maj();
+    val.classList.toggle('en-attente', false);
+    if (attente !== null && attente !== undefined && attente !== Number(r.value)) {
+      val.innerHTML = '';
+      val.textContent = opt.libelle ? opt.libelle(attente, false) : String(attente);
+      val.classList.add('en-attente');
+    }
+  };
+  // L'ordre part des que le curseur s'arrete (0,45 s) ou quand le doigt se leve ;
+  // pendant ce temps l'actualisation automatique ne touche pas au curseur.
+  c.envoye = null;
+  const envoyer = () => {
+    clearTimeout(c.t);
+    const v = Number(r.value);
+    if (v !== c.envoye) { c.envoye = v; if (opt.valider) opt.valider(v); }
+  };
+  boutons.forEach(b => b.addEventListener('click', () => {
+    r.value = b.dataset.v;
+    if (opt.type) derniereAction[opt.type] = Date.now();
+    maj();
+    envoyer();
+  }));
+  maj();
+  return c;
+}
+
+const lib6 = (v, court) => v === 6 ? 'AUTO' : String(v);
+const curseurs = {};
+
+function construire() {
+  el('icFlamme').insertAdjacentHTML('afterbegin', ICONES.flamme);
+  el('icVent').insertAdjacentHTML('afterbegin', ICONES.vent);
+  el('icMin').insertAdjacentHTML('afterbegin', ICONES.horloge);
+  el('icProg').insertAdjacentHTML('afterbegin', ICONES.calendrier);
+  el('rond').innerHTML = ICONES.flamme;
+  el('bAllumer').innerHTML = ICONES.marche + '<span>Allumer</span>';
+  el('bEteindre').innerHTML = ICONES.marche + '<span>Éteindre</span>';
+  el('bAjoutProg').innerHTML = ICONES.plus + '<span>Ajouter un programme</span>';
+
+  curseurs.flamme = creerCurseur(el('zFlamme'), { nom: 'Puissance', icone: ICONES.flamme, min: 1, max: 5, type: 'flamme',
+    valider: v => commande('flamme', v) });
+  const vents = [['vent1', 'Ventilateur 1', 0], ['vent2', 'Ventilateur 2', 0], ['vent3', 'Ventilateur 3', 0]];
+  vents.forEach(([type, nom, min]) => {
+    curseurs[type] = creerCurseur(el('zVent'), { nom, icone: ICONES.vent, min, max: 6, type, libelle: lib6,
+      valider: v => commande(type, v) });
+  });
+
+  el('bAllumer').addEventListener('click', () => commande('marche', 'on'));
+  el('bEteindre').addEventListener('click', () => { if (confirm('Éteindre le poêle ?')) commande('marche', 'off'); });
+
+  // Minuteur
+  let actionMin = 'off';
+  el('segMin').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    actionMin = b.dataset.a;
+    el('segMin').querySelectorAll('button').forEach(x => x.classList.toggle('actif', x === b));
+  }));
+  [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h'], [240, '4 h'], [480, '8 h']].forEach(([m, t]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'puce'; b.textContent = t;
+    b.addEventListener('click', () => lancerMinuteur(actionMin, m));
+    el('pucesMin').appendChild(b);
+  });
+  el('bMinPerso').addEventListener('click', () => {
+    const m = parseInt(el('minPerso').value, 10);
+    if (!(m >= 1 && m <= 1440)) { montrer('Durée entre 1 et 1440 minutes.'); return; }
+    lancerMinuteur(actionMin, m);
+    el('minPerso').value = '';
+  });
+
+  construireFormulaire();
+}
+
+async function lancerMinuteur(action, minutes) {
+  try {
+    await appel('minuteur', { action, minutes });
+    montrer((action === 'off' ? 'Extinction' : 'Allumage') + ' programmé dans ' + duree(minutes * 60));
+    charger();
+  } catch (e) { montrer('Erreur : minuteur non enregistré.'); }
+}
+
+function duree(s) {
+  s = Math.max(0, Math.round(s));
+  if (s < 90) return s + ' s';
+  const m = Math.round(s / 60);
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + ' h' + (r ? ' ' + String(r).padStart(2, '0') : '');
+}
+
+// ---------- Affichage ----------
+// Carte "Temperature de la piece" : valeur, humidite, etat de confort et position sur l'echelle 10-30 degres
+function majTemp(e) {
+  const ok = e.temperature !== null && e.mesure_age !== null && e.mesure_age < 300;
+  const carte = el('carteTemp');
+  carte.classList.toggle('hors-ligne', !ok);
+  if (!ok) {
+    el('tVal').innerHTML = '–<small>°C</small>';
+    el('hVal').textContent = '–';
+    el('tEtat').textContent = 'Capteur hors ligne'; el('tEtat').className = 'temp-etat';
+    return;
+  }
+  const t = e.temperature;
+  el('tVal').innerHTML = t.toFixed(1).replace('.', ',') + '<small>°C</small>';
+  el('hVal').textContent = Math.round(e.humidite) + ' %';
+  const cls = t < 18.5 ? 'froid' : (t <= 23 ? 'bon' : 'chaud');
+  el('tEtat').textContent = t < 18.5 ? 'Frais' : (t <= 23 ? 'Confortable' : 'Chaud');
+  el('tEtat').className = 'temp-etat ' + cls;
+  el('tMarque').style.left = Math.min(100, Math.max(0, (t - 5) / 35 * 100)) + '%';
+}
+
+function afficher(e) {
+  etat = e;
+  el('pointEsp').classList.toggle('ok', e.esp_connecte);
+  el('texteEsp').textContent = e.esp_connecte ? 'ESP32 connecté' : 'ESP32 non connecté';
+  el('pointEsp').parentElement.classList.toggle('hors', !e.esp_connecte);
+  el('bandeau').hidden = e.esp_connecte;
+
+  const allume = e.poele === 'allume';
+  el('hero').classList.toggle('allume', allume);
+  el('hero').classList.toggle('mode-auto', e.mode === 'AUTO');
+  el('hero').classList.toggle('mode-eco', e.mode === 'ECO');
+  el('gEtat').textContent = e.poele === 'inconnu' ? 'État inconnu' : (allume ? 'Allumé' : 'Éteint');
+  if (allume && (e.mode === 'MAN' || e.mode === 'AUTO' || e.mode === 'ECO')) {
+    const b = document.createElement('span');
+    b.className = 'badge-mode'; b.textContent = e.mode;
+    el('gEtat').appendChild(b);
+  }
+  const f = v => (v === null ? '–' : (v === 6 ? 'A' : String(v)));
+  el('dEtat').textContent = e.poele === 'inconnu' ? 'Pas encore d\'information du poêle'
+    : 'Mode ' + e.mode + ' · Flamme ' + (e.flamme === null ? '–' : e.flamme) + ' · Ventilos ' + f(e.vent1) + ' / ' + f(e.vent2) + ' / ' + f(e.vent3);
+  majTemp(e);
+
+  const att = {};
+  e.commandes.forEach(c => { if ((c.statut === 'attente' || c.statut === 'envoi') && !(c.type in att)) att[c.type] = Number(c.valeur); });
+  ['flamme', 'vent1', 'vent2', 'vent3'].forEach(t => curseurs[t].mettre(e[t], t in att ? att[t] : null));
+  // En AUTO / ECO le thermostat de la telecommande regle la puissance : on grise la flamme
+  const figee = (e.mode === 'AUTO' || e.mode === 'ECO');
+  curseurs.flamme.r.disabled = figee;
+  curseurs.flamme.boutons.forEach(b => { b.disabled = figee; });
+  curseurs.flamme.bloc.style.opacity = figee ? '.5' : '';
+  el('noteFlamme').textContent = figee
+    ? 'Mode ' + e.mode + ' : le poêle règle lui-même la puissance. Passe en MAN sur la télécommande pour la régler ici.'
+    : 'Réglable en mode MAN.';
+
+  // Minuteurs
+  const lm = el('listeMin');
+  lm.textContent = '';
+  e.minuteurs.forEach(m => {
+    const it = document.createElement('div'); it.className = 'item';
+    const g = document.createElement('div');
+    const a = document.createElement('div'); a.className = 'gros';
+    a.textContent = (m.action === 'off' ? 'Extinction' : 'Allumage') + ' dans ' + duree(m.echeance - e.maintenant);
+    const h = document.createElement('small');
+    h.textContent = 'à ' + new Date(m.echeance * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    g.append(a, h);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn petit'; b.textContent = 'Annuler';
+    b.addEventListener('click', async () => { await appel('minuteur_annuler', { id: m.id }); charger(); });
+    it.append(g, b);
+    lm.appendChild(it);
+  });
+
+  // Programmes
+  const lp = el('listeProg');
+  lp.textContent = '';
+  if (!e.programmes.length) {
+    const v = document.createElement('div'); v.className = 'vide'; v.textContent = 'Aucun programme pour l\'instant.';
+    lp.appendChild(v);
+  }
+  e.programmes.forEach(p => lp.appendChild(carteProgramme(p)));
+
+  // Dernieres demandes
+  const lc = el('listeCmd');
+  lc.textContent = '';
+  e.commandes.forEach(c => {
+    const li = document.createElement('li');
+    const g = document.createElement('div');
+    const t = document.createElement('div');
+    t.textContent = (NOMS[c.type] || c.type) + ' : ' + libelleValeur(c.type, c.valeur);
+    const h = document.createElement('small');
+    h.textContent = new Date(c.date_demande * 1000).toLocaleTimeString('fr-FR');
+    g.append(t, h);
+    const s = document.createElement('span');
+    s.className = 'statut ' + c.statut; s.textContent = STATUTS[c.statut] || c.statut;
+    li.append(g, s);
+    lc.appendChild(li);
+  });
+}
+
+function libelleValeur(type, v) {
+  if (type === 'marche') return v === 'on' ? 'Allumer' : 'Éteindre';
+  if (type === 'flamme') return 'niveau ' + v;
+  return v === '6' ? 'AUTO' : 'niveau ' + v;
+}
+
+function resumeProgramme(p) {
+  if (p.action === 'off') return 'Éteindre';
+  const bits = [];
+  if (p.flamme !== null) bits.push('flamme ' + p.flamme);
+  const v = [p.vent1, p.vent2, p.vent3];
+  if (v.some(x => x !== null)) bits.push('ventilos ' + v.map(x => x === null ? '–' : (x === 6 ? 'A' : x)).join('/'));
+  return 'Allumer' + (bits.length ? ' · ' + bits.join(' · ') : '');
+}
+
+function carteProgramme(p) {
+  const c = document.createElement('div');
+  c.className = 'prog' + (p.actif ? '' : ' inactif');
+  const h = document.createElement('div'); h.className = 'heure';
+  h.textContent = p.heure;
+  const sp = document.createElement('span'); sp.textContent = p.action === 'on' ? 'Allumer' : 'Éteindre';
+  h.appendChild(sp);
+  const j = document.createElement('div'); j.className = 'jours';
+  LETTRES.forEach((l, i) => {
+    const d = document.createElement('span');
+    d.className = 'jour' + (p.jours.includes(i + 1) ? ' on' : '');
+    d.textContent = l; d.setAttribute('aria-label', NOMS_JOURS[i] + (p.jours.includes(i + 1) ? ' actif' : ' inactif'));
+    j.appendChild(d);
+  });
+  const r = document.createElement('div'); r.className = 'resume'; r.textContent = resumeProgramme(p);
+  const act = document.createElement('div'); act.className = 'prog-actions';
+  const sw = document.createElement('button');
+  sw.type = 'button'; sw.className = 'interrupteur'; sw.setAttribute('role', 'switch');
+  sw.setAttribute('aria-checked', p.actif ? 'true' : 'false'); sw.setAttribute('aria-label', 'Programme actif');
+  sw.addEventListener('click', async () => { await appel('programme_actif', { id: p.id, actif: !p.actif }); charger(); });
+  const ed = document.createElement('button');
+  ed.type = 'button'; ed.className = 'icone-btn'; ed.setAttribute('aria-label', 'Modifier'); ed.innerHTML = ICONES.crayon;
+  ed.addEventListener('click', () => ouvrirFormulaire(p));
+  const su = document.createElement('button');
+  su.type = 'button'; su.className = 'icone-btn'; su.setAttribute('aria-label', 'Supprimer'); su.innerHTML = ICONES.corbeille;
+  su.addEventListener('click', async () => {
+    if (!confirm('Supprimer ce programme ?')) return;
+    await appel('programme_supprimer', { id: p.id }); charger();
+  });
+  act.append(sw, ed, su);
+  c.append(h, act, j, r);
+  return c;
+}
+
+// ---------- Formulaire de programme ----------
+const form = { id: 0, jours: new Set([1, 2, 3, 4, 5]), action: 'on', opts: {} };
+
+function construireFormulaire() {
+  LETTRES.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'jour'; b.textContent = l; b.dataset.j = String(i + 1);
+    b.setAttribute('aria-label', NOMS_JOURS[i]);
+    b.addEventListener('click', () => { const n = i + 1; form.jours.has(n) ? form.jours.delete(n) : form.jours.add(n); majJours(); });
+    el('fJours').appendChild(b);
+  });
+  document.querySelectorAll('.raccourcis button').forEach(b => b.addEventListener('click', () => {
+    form.jours = new Set(b.dataset.j.split(',').map(Number)); majJours();
+  }));
+  el('fAction').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { form.action = b.dataset.a; majAction(); }));
+
+  [['flamme', 'Flamme', 1, 5, null], ['vent1', 'Ventilateur 1', 0, 6, lib6], ['vent2', 'Ventilateur 2', 0, 6, lib6], ['vent3', 'Ventilateur 3', 0, 6, lib6]]
+    .forEach(([cle, nom, min, max, libelle]) => {
+      const bloc = document.createElement('div'); bloc.className = 'opt ferme';
+      const tete = document.createElement('div'); tete.className = 'tete';
+      const lab = document.createElement('label');
+      const cb = document.createElement('input'); cb.type = 'checkbox';
+      const tx = document.createElement('span'); tx.textContent = nom;
+      lab.append(cb, tx);
+      const val = document.createElement('strong');
+      tete.append(lab, val);
+      const r = { value: String(Math.min(Math.max(2, min), max)) };
+      const grad = document.createElement('div'); grad.className = 'graduations';
+      const bts = [];
+      for (let i = min; i <= max; i++) {
+        const g = document.createElement('button');
+        g.type = 'button'; g.className = 'grad'; g.dataset.v = String(i);
+        g.textContent = libelle ? libelle(i) : String(i);
+        g.addEventListener('click', () => { r.value = String(i); cb.checked = true; maj(); });
+        grad.appendChild(g); bts.push(g);
+      }
+      const maj = () => {
+        val.textContent = cb.checked ? (libelle ? libelle(Number(r.value)) : r.value) : 'inchangé';
+        bts.forEach(g => g.classList.toggle('actif', cb.checked && Number(g.dataset.v) === Number(r.value)));
+        bloc.classList.toggle('ferme', !cb.checked);
+      };
+      cb.addEventListener('change', maj);
+      bloc.append(tete, grad);
+      el('fSliders').appendChild(bloc);
+      form.opts[cle] = { cb, r, maj, min };
+      maj();
+    });
+
+  el('bAjoutProg').addEventListener('click', () => ouvrirFormulaire(null));
+  el('fAnnuler').addEventListener('click', () => el('dlg').close());
+  el('fValider').addEventListener('click', enregistrerProgramme);
+}
+
+function majJours() {
+  el('fJours').querySelectorAll('.jour').forEach(b => b.classList.toggle('on', form.jours.has(Number(b.dataset.j))));
+}
+function majAction() {
+  el('fAction').querySelectorAll('button').forEach(b => b.classList.toggle('actif', b.dataset.a === form.action));
+  el('fReglages').style.display = form.action === 'on' ? 'grid' : 'none';
+}
+
+function ouvrirFormulaire(p) {
+  form.id = p ? p.id : 0;
+  form.jours = new Set(p ? p.jours : [1, 2, 3, 4, 5]);
+  form.action = p ? p.action : 'on';
+  el('fHeure').value = p ? p.heure : '07:00';
+  el('dlgTitre').textContent = p ? 'Modifier le programme' : 'Nouveau programme';
+  el('fErreur').textContent = '';
+  Object.entries(form.opts).forEach(([cle, o]) => {
+    const v = p ? p[cle] : null;
+    o.cb.checked = v !== null && v !== undefined;
+    if (o.cb.checked) o.r.value = v;
+    o.maj();
+  });
+  majJours(); majAction();
+  el('dlg').showModal();
+}
+
+async function enregistrerProgramme() {
+  if (!form.jours.size) { el('fErreur').textContent = 'Choisis au moins un jour.'; return; }
+  const heure = el('fHeure').value;
+  if (!/^\d{2}:\d{2}$/.test(heure)) { el('fErreur').textContent = 'Choisis une heure.'; return; }
+  const corps = { id: form.id, jours: [...form.jours].sort((a, b) => a - b), heure, action: form.action, actif: true };
+  Object.entries(form.opts).forEach(([cle, o]) => { corps[cle] = (form.action === 'on' && o.cb.checked) ? Number(o.r.value) : null; });
+  if (form.id) { const ex = etat && etat.programmes.find(x => x.id === form.id); if (ex) corps.actif = ex.actif; }
+  try {
+    await appel('programme_enregistrer', corps);
+    el('dlg').close();
+    montrer('Programme enregistré.');
+    charger();
+  } catch (e) { el('fErreur').textContent = 'Erreur : programme non enregistré.'; }
+}
+
+let dernierPiOk = Date.now();      // derniere reponse du Pi
+async function charger() {
+  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 5000);   // une requete bloquee est abandonnee
+  try {
+    const rep = await fetch('api.php?action=etat', { cache: 'no-store', signal: ac.signal });
+    afficher(await rep.json());
+    dernierPiOk = Date.now();
+    el('bandeauSecours').hidden = true;
+  } catch (e) {
+    el('texteEsp').textContent = 'Serveur injoignable';
+    el('pointEsp').classList.remove('ok');
+    el('pointEsp').parentElement.classList.add('hors');
+    // le Pi ne repond plus depuis 30 s : on propose le mode secours (page de l'ESP32)
+    if (Date.now() - dernierPiOk >= 30000) el('bandeauSecours').hidden = false;
+  } finally { clearTimeout(to); }
+}
+
+// ---------- Clair / sombre (choix retenu dans le navigateur) ----------
+const SOLEIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></svg>';
+const LUNE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.500A8 8 0 1 1 9.500 4 6.500 6.500 0 0 0 20 14.500z"/></svg>';
+function themeActuel() {
+  const t = document.documentElement.dataset.theme;
+  if (t === 'light' || t === 'dark') return t;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+try { const t = localStorage.getItem('poele-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+
+construire();
+charger();
+setInterval(charger, 3000);
+</script>
+<script>
+// Copie de l'appli sur l'appareil (seulement en HTTPS)
+try { if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () {}); });
+} } catch (e) {}
+</script>
+</body>
+</html>

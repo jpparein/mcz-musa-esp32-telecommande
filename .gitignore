@@ -1,0 +1,12 @@
+# secrets et donnees
+secrets.h
+token.txt
+*.db
+*.sqlite
+*.log
+# sauvegardes et temporaires
+*.bak
+*.bak-*
+*.orig
+build/
+__pycache__/
