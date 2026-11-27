@@ -61,6 +61,8 @@ Les trames ne disent pas tout : il faut aussi observer **quand** la télécomman
 
 Pour remplacer la télécommande, l'ESP32 reproduit ces règles avec un capteur de température.
 
+**Quand vous passez en mode « Remplacement », retirez les piles de la télécommande MCZ d’origine.** Elle peut encore envoyer des ordres au poêle sans que vous appuyiez sur un bouton. À chaque signal reçu de la télécommande, le thermostat de l’ESP32 se met en pause pour 30 minutes. En mode « Avec télécommande », gardez les piles en place.
+
 | Télécommande à l'écran (AUTO) | Mode ECO | Mode nuit (NO AIR) |
 |---|---|---|
 | <img src="photos/application/telecommande-ecran-auto.jpg" width="230" alt="Télécommande à l'écran (AUTO)"> | <img src="photos/application/telecommande-eco.jpg" width="230" alt="Mode ECO"> | <img src="photos/application/mode-nuit-no-air.jpg" width="230" alt="Mode nuit (NO AIR)"> |

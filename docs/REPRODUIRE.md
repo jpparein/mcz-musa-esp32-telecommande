@@ -129,8 +129,8 @@ Voir [SERVEUR.md](SERVEUR.md). Sans serveur, le firmware sait aussi servir une p
 
 ## 11. Étape H — Cohabiter avec la télécommande, ou la remplacer
 
-- **Avec télécommande** : l'ESP32 écoute la télécommande ; pour envoyer un ordre il part de sa **dernière trame** et ne change **qu'un champ**. Piège : la télécommande renvoie tout son état à chaque trame ; si l'application ne tient pas compte de ce que vous faites sur la télécommande, un simple appui sur un ventilateur de la télécommande rétablit la flamme à l'ancienne valeur. Le firmware compare chaque trame de la télécommande à la précédente, repère ce qui a changé, l'applique à l'état de l'application, puis renvoie l'ensemble une seconde plus tard.
-- **Remplacement** : l'ESP32 fait le thermostat avec le DHT22 (règles AUTO/ECO/NO AIR de [PROTOCOLE.md](PROTOCOLE.md)). Si une vraie télécommande est entendue, il se tait 30 minutes.
+- En mode **Avec télécommande**, laissez les piles en place. L'ESP32 écoute la télécommande ; pour envoyer un ordre il part de sa **dernière trame** et ne change **qu'un champ**. Piège : la télécommande renvoie tout son état à chaque trame ; si l'application ne tient pas compte de ce que vous faites sur la télécommande, un simple appui sur un ventilateur de la télécommande rétablit la flamme à l'ancienne valeur. Le firmware compare chaque trame de la télécommande à la précédente, repère ce qui a changé, l'applique à l'état de l'application, puis renvoie l'ensemble une seconde plus tard.
+- En mode **Remplacement**, **retirez les piles de la télécommande MCZ d’origine** pour que l’ESP32 assure seul la régulation avec sa sonde DHT22 (règles AUTO/ECO/NO AIR de [PROTOCOLE.md](PROTOCOLE.md)). La télécommande peut envoyer des ordres même sans appui sur un bouton. Chaque fois que l’ESP32 reçoit un de ses signaux, son thermostat se met en pause pour 30 minutes.
 
 ## 12. Liste de contrôle de validation
 
